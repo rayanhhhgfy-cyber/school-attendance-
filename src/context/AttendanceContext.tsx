@@ -688,7 +688,11 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     if (!currentUser) return [];
     if (currentUser.role === 'manager') return timetable;
     return timetable.filter(
-      s => s.teacherId === currentUser.teacherId || (currentUser.assignedClasses && currentUser.assignedClasses.includes(s.classId))
+      s =>
+        s.teacherId === currentUser.teacherId ||
+        s.substituteTeacherId === currentUser.id ||
+        s.substituteTeacherId === currentUser.teacherId ||
+        (currentUser.assignedClasses && currentUser.assignedClasses.includes(s.classId))
     );
   }, [currentUser, timetable]);
 
@@ -766,13 +770,16 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     );
 
     if (slot) {
-      if (slot.teacherId && slot.teacherId === currentUser.teacherId) {
+      if (
+        (slot.teacherId && slot.teacherId === currentUser.teacherId) ||
+        (slot.substituteTeacherId && (slot.substituteTeacherId === currentUser.id || slot.substituteTeacherId === currentUser.teacherId))
+      ) {
         return { allowed: true };
       }
-      if (slot.teacherId && slot.teacherId !== currentUser.teacherId) {
+      if (slot.teacherId && slot.teacherId !== currentUser.teacherId && !slot.substituteTeacherId) {
         return {
           allowed: false,
-          reason: `هذه الحصة (${slot.subject}) مسندة إلى (${slot.teacherName || 'معلم آخر'}). بصفتك معلماً، يمكنك فقط رصد حصصك ومجموعتك الخاصة (مثل حصصك المجدولة)، ولا يمكن تعديل حصص المعلمين الآخرين إلا من قبل مدير المدرسة.`,
+          reason: `هذه الحصة (${slot.subject}) مسندة إلى (${slot.teacherName || 'معلم آخر'}). بصفتك معلماً، يمكنك فقط رصد حصصك أو الحصص المكلف بها كمعلم بديل، ولا يمكن تعديل حصص المعلمين الآخرين إلا من قبل مدير المدرسة.`,
         };
       }
     }

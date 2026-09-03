@@ -69,6 +69,8 @@ export interface TimetableSlot {
   room: string;
   teacherId?: string;
   teacherName?: string;
+  substituteTeacherId?: string;
+  substituteTeacherName?: string;
 }
 
 export interface UserAccount {

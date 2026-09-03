@@ -607,7 +607,7 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                   id="btn-wa-absence"
                   onClick={() =>
                     sendWhatsAppMessage(
-                      `السلام عليكم ورحمة الله، نود إحاطتكم بغياب ابنكم (${studentToEdit.name}) عن مدرسة الأمل الابتدائية اليوم، نرجو الاطمئنان عليه وموافاتنا بالسبب في حال وجود عذر طبي. شاكرين تعاونكم.`
+                      `السلام عليكم ورحمة الله، نود إحاطتكم بغياب ابنكم (${studentToEdit.name}) عن مدرسة الملك حسين بن طلال الثانوية للبنين اليوم، نرجو الاطمئنان عليه وموافاتنا بالسبب في حال وجود عذر طبي. شاكرين تعاونكم.`
                     )
                   }
                   className="w-full p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-right transition cursor-pointer flex items-start gap-3 text-emerald-950"

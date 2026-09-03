@@ -43,6 +43,8 @@ export const ManagerControlCenter: React.FC = () => {
     updateStudent,
     deleteStudent,
     currentUser,
+    timetable,
+    updateTimetableSlot,
     setSelectedClassId,
     setSelectedPeriod,
     setActiveTab,
@@ -352,6 +354,67 @@ export const ManagerControlCenter: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* SECTION FOR SUBSTITUTE DELEGATION */}
+      <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-amber-950 flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-amber-800" />
+              <span>تفويض المعلم البديل والمناوبة (Substitute Delegation)</span>
+            </h3>
+            <p className="text-xs text-amber-800 mt-0.5">
+              يمكنك كمدير تكليف معلم بديل لرصد الحضور وتغطية حصة معلم غائب ليوم واحد.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          {timetable.slice(0, 6).map(slot => (
+            <div
+              key={slot.id}
+              className="p-3 bg-white rounded-xl border border-amber-200 text-xs flex flex-col justify-between gap-2 shadow-2xs"
+            >
+              <div>
+                <div className="flex items-center justify-between font-bold text-slate-900">
+                  <span>{slot.className} — الحصة {slot.periodNumber}</span>
+                  <span className="text-slate-500">{slot.day}</span>
+                </div>
+                <div className="text-[11px] text-slate-600 mt-0.5">
+                  المادة: <strong>{slot.subject}</strong> • المعلم الأصلي: <strong>{slot.teacherName}</strong>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-amber-900 font-bold">
+                  {slot.substituteTeacherName ? `البديل المكلف: ${slot.substituteTeacherName}` : 'لا يوجد معلم بديل'}
+                </span>
+                <select
+                  value={slot.substituteTeacherId || ''}
+                  onChange={e => {
+                    const subId = e.target.value;
+                    const subUser = users.find(u => u.id === subId || u.teacherId === subId);
+                    updateTimetableSlot(slot.id, {
+                      substituteTeacherId: subId || undefined,
+                      substituteTeacherName: subUser?.name || undefined,
+                    });
+                  }}
+                  className="h-8 px-2 bg-amber-100 text-amber-950 font-bold rounded-lg text-xs border border-amber-300 cursor-pointer"
+                >
+                  <option value="">+ تكليف بديل</option>
+                  {users
+                    .filter(u => u.role === 'teacher')
+                    .map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* SECTION 2: PERIOD TIMINGS & ATTENDANCE WINDOWS */}
       {activeSection === 'timings' && (
