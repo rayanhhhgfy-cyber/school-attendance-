@@ -1,0 +1,6 @@
+{
+  "name": "Smart School Attendance Platform",
+  "description": "منصة ذكية متطورة وسريعة لتسجيل الحضور المدرسي وإدارة الجداول وحالات الغياب والتقارير اليومية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

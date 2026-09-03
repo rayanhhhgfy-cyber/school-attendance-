@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "منصة الحضور المدرسي الذكي",
+  "short_name": "الحضور",
+  "description": "منصة ذكية وسهلة الاستخدام لرصد الحضور والغياب المدرسي بأعلى معايير سهولة الاستخدام",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0F172A",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
