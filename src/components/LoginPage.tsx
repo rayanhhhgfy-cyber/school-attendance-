@@ -31,42 +31,6 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [biometricStatus, setBiometricStatus] = useState<string | null>(null);
-
-  const handleBiometricAuth = async () => {
-    setErrorMessage('');
-    setBiometricStatus('جاري التحقق من البصمة / Face ID...');
-
-    // Simulate / Trigger WebAuthn Biometric Prompt
-    try {
-      if (window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
-        // Authenticator available
-        setTimeout(() => {
-          setBiometricStatus(null);
-          // Default quick biometric auth to manager or active teacher
-          const defaultUser = managerUser || teacherUsers[0];
-          if (defaultUser) {
-            handleQuickLogin(defaultUser.username, defaultUser.password);
-          }
-        }, 800);
-      } else {
-        // Fallback simulation for devices without WebAuthn hardware API in iframe sandbox
-        setTimeout(() => {
-          setBiometricStatus(null);
-          const defaultUser = managerUser || teacherUsers[0];
-          if (defaultUser) {
-            handleQuickLogin(defaultUser.username, defaultUser.password);
-          }
-        }, 800);
-      }
-    } catch {
-      setBiometricStatus(null);
-      const defaultUser = managerUser || teacherUsers[0];
-      if (defaultUser) {
-        handleQuickLogin(defaultUser.username, defaultUser.password);
-      }
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
