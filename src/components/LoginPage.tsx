@@ -367,17 +367,6 @@ export const LoginPage: React.FC = () => {
                     )}
                   </button>
 
-                  {/* Biometric Auth Quick Access Button */}
-                  <button
-                    type="button"
-                    id="btn-biometric-login"
-                    onClick={handleBiometricAuth}
-                    disabled={Boolean(biometricStatus)}
-                    className="w-full h-11 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-900 font-bold rounded-xl border border-emerald-300 shadow-xs flex items-center justify-center gap-2 text-xs sm:text-sm transition cursor-pointer"
-                  >
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                    <span>{biometricStatus || 'تسجيل الدخول السريع ببصمة الاصبع / Face ID'}</span>
-                  </button>
                 </form>
               </div>
 

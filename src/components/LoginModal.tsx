@@ -197,22 +197,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               )}
             </button>
 
-              {/* Quick Biometric TouchID / FaceID Login Button */}
-              <button
-                type="button"
-                id="btn-modal-biometric-login"
-                onClick={() => {
-                  const targetUser = users.find(u => u.username === username) || users[0];
-                  if (targetUser) {
-                    login(targetUser.username, targetUser.password);
-                    onClose();
-                  }
-                }}
-                className="w-full h-11 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold rounded-xl border border-emerald-300 shadow-xs flex items-center justify-center gap-2 text-xs sm:text-sm transition cursor-pointer"
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>دخول سريع ببصمة الأصبع / Touch ID</span>
-              </button>
           </form>
 
           {/* Preset Quick Logins Section */}

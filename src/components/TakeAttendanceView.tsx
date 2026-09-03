@@ -71,7 +71,7 @@ export const TakeAttendanceView: React.FC = () => {
   const [selectedStudentForModal, setSelectedStudentForModal] = useState<Student | null>(null);
 
   const authCheck = canUserEditAttendance(selectedClassId, selectedPeriod);
-  const isSessionLocked = settings.emergencyLockdown || !authCheck.allowed;
+  const isSessionLocked = settings.emergencyLockdown || !authCheck.allowed || isCurrentSessionSubmitted;
 
   const currentSessionKey = `${selectedClassId}_${currentDate}_p${selectedPeriod}`;
   const isDismissed = !!dismissedSessions[currentSessionKey];
