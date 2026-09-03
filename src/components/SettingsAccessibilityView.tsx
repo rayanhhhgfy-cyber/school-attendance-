@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { useAttendance } from '../context/AttendanceContext';
 import { usePWAInstall, useOnlineStatus } from '../hooks/usePWA';
+import { ManagerControlCenter } from './ManagerControlCenter';
 import {
   SlidersHorizontal,
   Volume2,
@@ -28,6 +29,9 @@ import {
   Clock,
   Phone,
   BookOpen,
+  ShieldAlert,
+  KeyRound,
+  Sliders,
 } from 'lucide-react';
 import { speakArabic } from '../utils/audio';
 
@@ -263,6 +267,94 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
           </button>
         )}
       </div>
+
+      {/* MANAGER FULL CONTROL PANEL IN SETTINGS (Visible to Manager rayyan) */}
+      {currentUser?.role === 'manager' && (
+        <div className="space-y-4 bg-purple-50/50 p-4 rounded-3xl border border-purple-200 shadow-xs">
+          <div className="flex items-center gap-2 px-3 py-1 bg-purple-900 text-white rounded-xl text-xs font-bold w-fit">
+            <ShieldAlert className="w-4 h-4 text-amber-300" />
+            <span>لوحة التحكم الكاملة لمدير المدرسة (أ. ريان)</span>
+          </div>
+
+          {/* System Feature Toggles for Manager */}
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-3">
+            <div>
+              <span className="px-2.5 py-0.5 bg-blue-100 text-blue-900 rounded-full font-bold text-xs">
+                التحكم بالنظام
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+                مفاتيح التشغيل والإيقاف للخصائص
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                تفعيل أو إيقاف آليات التنبيه والتحضير التلقائي بضغطة واحدة.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Toggle 1: SMS Alerts */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    رسائل وتنبيهات الغياب لأولياء الأمور
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    إرسال رسالة فورية لولي أمر الطالب الغائب فور اعتماد كشف الحصة.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="toggle-sms-alerts-settings"
+                  onClick={() => updateSetting('enableSmsAlerts', !settings.enableSmsAlerts)}
+                  className="p-1 rounded-xl cursor-pointer"
+                  aria-label="تبديل تفعيل رسائل الغياب"
+                >
+                  {settings.enableSmsAlerts ? (
+                    <div className="w-12 h-6 bg-emerald-600 rounded-full p-0.5 flex items-center justify-end transition">
+                      <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                      <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
+                    </div>
+                  )}
+                </button>
+              </div>
+
+              {/* Toggle 2: Pause Alerts on Holidays */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    إيقاف التنبيهات في العطلات ونهاية الأسبوع
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    كتم كافة الإشعارات يومي الجمعة والسبت والإجازات الرسمية.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="toggle-pause-holidays-settings"
+                  onClick={() => updateSetting('pauseAlertsOnHolidays', !settings.pauseAlertsOnHolidays)}
+                  className="p-1 rounded-xl cursor-pointer"
+                  aria-label="تبديل إيقاف التنبيهات في العطلات"
+                >
+                  {settings.pauseAlertsOnHolidays ? (
+                    <div className="w-12 h-6 bg-emerald-600 rounded-full p-0.5 flex items-center justify-end transition">
+                      <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                      <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Embedded Full Credentials & Teacher Management Component */}
+          <ManagerControlCenter />
+        </div>
+      )}
 
       {/* 2. Account & Log Out Card (Mandated User Feature) */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">

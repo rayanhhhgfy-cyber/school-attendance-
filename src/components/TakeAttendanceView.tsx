@@ -176,12 +176,15 @@ export const TakeAttendanceView: React.FC = () => {
                   <button
                     id="btn-reopen-submit-from-header"
                     type="button"
-                    onClick={() => setShowConfirmModal(true)}
-                    className="h-7 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition border border-slate-200 cursor-pointer flex items-center gap-1"
-                    title="إعادة حفظ الكشف بعد التعديل"
+                    onClick={() => {
+                      setDismissedSessions(prev => ({ ...prev, [currentSessionKey]: false }));
+                      setShowConfirmModal(true);
+                    }}
+                    className="h-7 px-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition shadow-2xs cursor-pointer flex items-center gap-1"
+                    title="إعادة فتح الكشف والتعديل وإعادة الحفظ"
                   >
-                    <Save className="w-3 h-3 text-emerald-700" />
-                    <span>إعادة الحفظ</span>
+                    <RotateCcw className="w-3 h-3 text-emerald-400" />
+                    <span>إعادة فتح الكشف للتعديل</span>
                   </button>
                 </div>
               ) : (
