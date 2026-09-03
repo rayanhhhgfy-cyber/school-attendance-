@@ -89,6 +89,7 @@ interface AttendanceContextType {
   markAllPresent: () => void;
   resetAttendanceSession: () => void;
   submitAttendanceSession: () => { present: number; absent: number; late: number; excused: number };
+  reopenAttendanceSession: () => void;
 
   // Timetable
   timetable: TimetableSlot[];
@@ -382,6 +383,14 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       };
     });
 
+    setSubmittedSessions(prev => {
+      const copy = { ...prev };
+      delete copy[currentSessionKey];
+      return copy;
+    });
+  };
+
+  const reopenAttendanceSession = () => {
     setSubmittedSessions(prev => {
       const copy = { ...prev };
       delete copy[currentSessionKey];
@@ -884,6 +893,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         markAllPresent,
         resetAttendanceSession,
         submitAttendanceSession,
+        reopenAttendanceSession,
         timetable,
         addTimetableSlot,
         updateTimetableSlot,
