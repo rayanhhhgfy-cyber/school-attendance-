@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
             <h1 className="text-sm font-bold text-slate-900 leading-tight">
               منصة الحضور المدرسي
             </h1>
-            <p className="text-[10px] text-slate-500 font-medium">مدرسة الأمل الابتدائية</p>
+            <p className="text-[10px] text-slate-500 font-medium">مدرسة الملك حسين بن طلال الثانوية للبنين</p>
           </div>
         </div>
 
@@ -330,7 +330,7 @@ export const Header: React.FC<HeaderProps> = ({
               منصة الحضور المدرسي الذكي
             </h1>
             <p className="text-xs text-slate-500 font-medium">
-              مدرسة الأمل الابتدائية • نظام الرصد الذكي بالاستثناء
+              مدرسة الملك حسين بن طلال الثانوية للبنين • نظام الرصد الذكي بالاستثناء
             </p>
           </div>
         </div>

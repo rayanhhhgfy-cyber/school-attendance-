@@ -109,7 +109,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </span>
           <h2 className="text-xl sm:text-2xl font-black mt-2">تسجيل الدخول للمنصة</h2>
           <p className="text-xs sm:text-sm text-blue-100 mt-1 opacity-90">
-            مدرسة الأمل الابتدائية • بوابة المعلمين والإدارة
+            مدرسة الملك حسين بن طلال الثانوية للبنين • بوابة المعلمين والإدارة
           </p>
         </div>
 

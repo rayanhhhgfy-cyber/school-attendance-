@@ -80,7 +80,7 @@ export const LoginPage: React.FC = () => {
           </div>
           <div>
             <h1 className="font-extrabold text-base sm:text-lg text-white leading-tight">
-              مدرسة الأمل الابتدائية
+              مدرسة الملك حسين بن طلال الثانوية للبنين
             </h1>
             <p className="text-[11px] sm:text-xs text-slate-400">
               بوابة رصد الحضور الذكي والغياب الميداني
@@ -348,7 +348,7 @@ export const LoginPage: React.FC = () => {
 
       {/* Page Footer */}
       <footer className="relative z-10 w-full border-t border-slate-800/80 bg-slate-950/40 text-center py-3 px-4 text-xs text-slate-500">
-        <p>نظام رصد الحضور الذكي والغياب الميداني • مدرسة الأمل الابتدائية • جميع الصلاحيات محفوظة للإدارة</p>
+        <p>نظام رصد الحضور الذكي والغياب الميداني • مدرسة الملك حسين بن طلال الثانوية للبنين • جميع الصلاحيات محفوظة للإدارة</p>
       </footer>
     </div>
   );
