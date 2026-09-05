@@ -6,7 +6,6 @@
 import React, { useState } from 'react';
 import { useAttendance } from '../context/AttendanceContext';
 import { StaffRole } from '../types';
-import { ManagerControlCenter } from './ManagerControlCenter';
 import { TeacherDashboardView } from './TeacherDashboardView';
 import {
   Users,
@@ -139,120 +138,40 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onOpenEm
         </div>
       </div>
 
-      {/* Feature 3: Smart Attendance Analytics & Predictive Risk Insights */}
-      <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-          <div>
-            <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 rounded-full font-bold text-xs flex items-center gap-1 w-fit">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>تحليلات ذكية والتنبؤ بالمخاطر</span>
+      {/* High Absence Risk Alert (Students with 2+ consecutive absences) */}
+      {students.filter(s => s.consecutiveAbsences >= 2).length > 0 && (
+        <div className="bg-red-50/90 border border-red-200 rounded-2xl p-4 shadow-xs space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm font-bold text-red-950 flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-red-600" />
+              <span>الطلاب الأكثر عرضة للإنذار (غياب متكرر - يتطلب تواصل مع ولي الأمر)</span>
             </span>
-            <h3 className="text-base sm:text-lg font-black text-slate-900 mt-1">
-              مؤشرات الغياب الحرج والإنذار المبكر
-            </h3>
+            <span className="px-2.5 py-0.5 bg-red-200 text-red-900 font-black text-xs rounded-full">
+              {students.filter(s => s.consecutiveAbsences >= 2).length} طلاب
+            </span>
           </div>
-          <span className="text-xs text-slate-500 font-medium">محدث فورياً وفق البيانات الميدانية</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          {/* High Absence Risk Students */}
-          <div className="p-4 bg-red-50/80 rounded-2xl border border-red-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-red-950 flex items-center gap-1">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-                <span>الطلاب الأكثر عرضة للإنذار (غياب متكرر)</span>
-              </span>
-              <span className="px-2 py-0.5 bg-red-200 text-red-900 font-black text-xs rounded-full">
-                {students.filter(s => s.consecutiveAbsences >= 2).length} طلاب
-              </span>
-            </div>
-            <p className="text-[11px] text-red-800 leading-snug">
-              الطلاب الذين وصل غيابهم لـ 2 أيام متتالية أو أكثر ويحتاجون لتواصل عاجل مع ولي الأمر.
-            </p>
-            <div className="space-y-1.5 pt-1">
-              {students
-                .filter(s => s.consecutiveAbsences >= 2)
-                .slice(0, 3)
-                .map(st => (
-                  <div
-                    key={st.id}
-                    className="p-2 bg-white rounded-xl border border-red-200 flex items-center justify-between text-xs"
-                  >
-                    <div>
-                      <span className="font-bold text-slate-900 block">{st.name}</span>
-                      <span className="text-[10px] text-slate-500">
-                        {classes.find(c => c.id === st.classId)?.name || 'فصل'}
-                      </span>
-                    </div>
-                    <span className="px-2 py-0.5 bg-red-100 text-red-800 font-bold text-[10px] rounded-md font-mono">
-                      غياب {st.consecutiveAbsences} أيام
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {students
+              .filter(s => s.consecutiveAbsences >= 2)
+              .map(st => (
+                <div
+                  key={st.id}
+                  className="p-2.5 bg-white rounded-xl border border-red-200 flex items-center justify-between text-xs"
+                >
+                  <div>
+                    <span className="font-bold text-slate-900 block">{st.name}</span>
+                    <span className="text-[10px] text-slate-500">
+                      {classes.find(c => c.id === st.classId)?.name || 'فصل'}
                     </span>
                   </div>
-                ))}
-            </div>
-          </div>
-
-          {/* Peak Absence Days Analysis */}
-          <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-950 flex items-center gap-1">
-                <Layers className="w-4 h-4 text-blue-700" />
-                <span>تحليل أيام ذروة الغياب المدرسية</span>
-              </span>
-              <span className="px-2 py-0.5 bg-blue-200 text-blue-900 font-bold text-xs rounded-full">
-                يوم الخميس (الأعلى)
-              </span>
-            </div>
-            <p className="text-[11px] text-blue-800 leading-snug">
-              تسجل أيام الخميس والأربعاء أعلى نسب غياب متكررة بالمدرسة (معدل 8.4%).
-            </p>
-            <div className="space-y-2 pt-2 text-xs">
-              <div>
-                <div className="flex justify-between text-[11px] font-bold mb-1">
-                  <span>الخميس (قبل الإجازة)</span>
-                  <span className="text-red-700">12% غياب</span>
+                  <span className="px-2 py-0.5 bg-red-100 text-red-800 font-bold text-[10px] rounded-md font-mono">
+                    غياب {st.consecutiveAbsences} أيام
+                  </span>
                 </div>
-                <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-red-600 rounded-full w-[85%]" />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-[11px] font-bold mb-1">
-                  <span>الأحد (بداية الأسبوع)</span>
-                  <span className="text-emerald-700">3% غياب</span>
-                </div>
-                <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-600 rounded-full w-[25%]" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Early Warning Prevention Metrics */}
-          <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-950 flex items-center gap-1">
-                <CheckCircle className="w-4 h-4 text-emerald-700" />
-                <span>مؤشر الوقاية والانتظام العام</span>
-              </span>
-              <span className="px-2 py-0.5 bg-emerald-200 text-emerald-900 font-bold text-xs rounded-full">
-                94% انضباط
-              </span>
-            </div>
-            <p className="text-[11px] text-emerald-800 leading-snug">
-              نسبة طلاب الثانوية الذين حققوا نسبة حضور كاملة خلال الأسابيع الأربعة الماضية.
-            </p>
-            <div className="p-3 bg-white rounded-xl border border-emerald-200 text-center space-y-1">
-              <span className="text-2xl font-black text-emerald-700 block">
-                {students.length - students.filter(s => s.consecutiveAbsences >= 2).length} / {students.length}
-              </span>
-              <span className="text-[11px] text-slate-500 font-medium block">
-                طالب منتظم بدون أي حرمان دراسي
-              </span>
-            </div>
+              ))}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Visual Pulse Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -349,9 +268,6 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onOpenEm
           </div>
         </div>
       </div>
-
-      {/* Manager Full Control Center: Passwords, Teachers, Timetable & Periods */}
-      <ManagerControlCenter />
 
       {/* Class Attendance Summary Breakdown Table */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-3">

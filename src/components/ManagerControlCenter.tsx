@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { useAttendance } from '../context/AttendanceContext';
-import { UserAccount, PeriodTimingConfig, SchoolClass, Student } from '../types';
+import { UserAccount, PeriodTimingConfig, SchoolClass, Student, TimetableSlot } from '../types';
 import {
   Users,
   Clock,
@@ -24,6 +24,9 @@ import {
   Layers,
   AlertCircle,
   Save,
+  Search,
+  UserPlus,
+  Filter,
 } from 'lucide-react';
 
 export const ManagerControlCenter: React.FC = () => {
@@ -50,7 +53,15 @@ export const ManagerControlCenter: React.FC = () => {
     setActiveTab,
   } = useAttendance();
 
-  const [activeSection, setActiveSection] = useState<'users' | 'timings' | 'classes_students'>('users');
+  const [activeSection, setActiveSection] = useState<'users' | 'substitutes' | 'timings' | 'classes_students'>('users');
+
+  // Substitute Management Filter & Modal State
+  const [subFilterDay, setSubFilterDay] = useState<string>('all');
+  const [subFilterClass, setSubFilterClass] = useState<string>('all');
+  const [subSearch, setSubSearch] = useState<string>('');
+  const [editingSubSlot, setEditingSubSlot] = useState<TimetableSlot | null>(null);
+  const [subNameInput, setSubNameInput] = useState<string>('');
+  const [subSelectUserId, setSubSelectUserId] = useState<string>('');
 
   // User modal state
   const [showUserModal, setShowUserModal] = useState(false);
@@ -194,6 +205,19 @@ export const ManagerControlCenter: React.FC = () => {
           >
             <KeyRound className="w-4 h-4" />
             <span>المعلمون والحسابات</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('substitutes')}
+            className={`px-3 py-2 rounded-lg font-bold text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer ${
+              activeSection === 'substitutes'
+                ? 'bg-purple-900 text-white shadow-xs'
+                : 'text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <UserCheck className="w-4 h-4" />
+            <span>المعلم البديل والمناوبة</span>
           </button>
 
           <button
@@ -355,66 +379,183 @@ export const ManagerControlCenter: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION FOR SUBSTITUTE DELEGATION */}
-      <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200 space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold text-amber-950 flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-amber-800" />
-              <span>تفويض المعلم البديل والمناوبة (Substitute Delegation)</span>
-            </h3>
-            <p className="text-xs text-amber-800 mt-0.5">
-              يمكنك كمدير تكليف معلم بديل لرصد الحضور وتغطية حصة معلم غائب ليوم واحد.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {timetable.slice(0, 6).map(slot => (
-            <div
-              key={slot.id}
-              className="p-3 bg-white rounded-xl border border-amber-200 text-xs flex flex-col justify-between gap-2 shadow-2xs"
-            >
+      {/* SECTION FOR SUBSTITUTE DELEGATION (Dedicated Tab inside Settings) */}
+      {activeSection === 'substitutes' && (
+        <div className="space-y-4">
+          <div className="bg-amber-50/90 p-4 sm:p-5 rounded-2xl border border-amber-300 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <div className="flex items-center justify-between font-bold text-slate-900">
-                  <span>{slot.className} — الحصة {slot.periodNumber}</span>
-                  <span className="text-slate-500">{slot.day}</span>
-                </div>
-                <div className="text-[11px] text-slate-600 mt-0.5">
-                  المادة: <strong>{slot.subject}</strong> • المعلم الأصلي: <strong>{slot.teacherName}</strong>
-                </div>
+                <h3 className="text-base sm:text-lg font-black text-amber-950 flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-amber-800" />
+                  <span>تكليف وتفويض المعلم البديل والمناوبة المدرسية</span>
+                </h3>
+                <p className="text-xs sm:text-sm text-amber-800 mt-1">
+                  يمكنك كمدير المدرسة اختيار معلم مسجل أو كتابة اسم أي معلم بديل يدوياً لتغطية حصص المعلمين الغائبين، وسيحصل البديل فوراً على صلاحية رصد الحضور للحصة المحددة.
+                </p>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                <span className="text-[11px] text-amber-900 font-bold">
-                  {slot.substituteTeacherName ? `البديل المكلف: ${slot.substituteTeacherName}` : 'لا يوجد معلم بديل'}
+              {/* Stats Badge */}
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-amber-300 text-xs font-bold text-amber-900 shrink-0">
+                <span>الحصص المكلفة ببديل:</span>
+                <span className="px-2 py-0.5 bg-amber-200 text-amber-950 rounded-md font-mono text-sm">
+                  {timetable.filter(s => s.substituteTeacherName).length} حصة
                 </span>
-                <select
-                  value={slot.substituteTeacherId || ''}
-                  onChange={e => {
-                    const subId = e.target.value;
-                    const subUser = users.find(u => u.id === subId || u.teacherId === subId);
-                    updateTimetableSlot(slot.id, {
-                      substituteTeacherId: subId || undefined,
-                      substituteTeacherName: subUser?.name || undefined,
-                    });
-                  }}
-                  className="h-8 px-2 bg-amber-100 text-amber-950 font-bold rounded-lg text-xs border border-amber-300 cursor-pointer"
-                >
-                  <option value="">+ تكليف بديل</option>
-                  {users
-                    .filter(u => u.role === 'teacher')
-                    .map(t => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                </select>
               </div>
             </div>
-          ))}
+
+            {/* Filter & Search Toolbar */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-amber-200">
+              {/* Day filter */}
+              <div>
+                <label className="block text-xs font-bold text-amber-950 mb-1">تصفية حسب اليوم:</label>
+                <select
+                  value={subFilterDay}
+                  onChange={e => setSubFilterDay(e.target.value)}
+                  className="w-full h-9 px-2.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-800 cursor-pointer"
+                >
+                  <option value="all">جميع الأيام</option>
+                  <option value="الأحد">الأحد</option>
+                  <option value="الإثنين">الإثنين</option>
+                  <option value="الثلاثاء">الثلاثاء</option>
+                  <option value="الأربعاء">الأربعاء</option>
+                  <option value="الخميس">الخميس</option>
+                </select>
+              </div>
+
+              {/* Class filter */}
+              <div>
+                <label className="block text-xs font-bold text-amber-950 mb-1">تصفية حسب الفصل:</label>
+                <select
+                  value={subFilterClass}
+                  onChange={e => setSubFilterClass(e.target.value)}
+                  className="w-full h-9 px-2.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-800 cursor-pointer"
+                >
+                  <option value="all">جميع الفصول الدراسية</option>
+                  {classes.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Search input */}
+              <div>
+                <label className="block text-xs font-bold text-amber-950 mb-1">بحث سريع:</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={subSearch}
+                    onChange={e => setSubSearch(e.target.value)}
+                    placeholder="ابحث بالمعلم، المادة، أو الفصل..."
+                    className="w-full h-9 pl-3 pr-8 bg-white border border-amber-300 rounded-xl text-xs text-slate-900 placeholder:text-slate-400"
+                  />
+                  <Search className="w-3.5 h-3.5 text-amber-700 absolute right-2.5 top-3" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Timetable Slots Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {timetable
+              .filter(slot => {
+                if (subFilterDay !== 'all' && slot.day !== subFilterDay) return false;
+                if (subFilterClass !== 'all' && slot.classId !== subFilterClass) return false;
+                if (subSearch.trim()) {
+                  const q = subSearch.toLowerCase();
+                  const matchSubj = slot.subject.toLowerCase().includes(q);
+                  const matchClass = slot.className.toLowerCase().includes(q);
+                  const matchTeach = (slot.teacherName || '').toLowerCase().includes(q);
+                  const matchSubTeach = (slot.substituteTeacherName || '').toLowerCase().includes(q);
+                  if (!matchSubj && !matchClass && !matchTeach && !matchSubTeach) return false;
+                }
+                return true;
+              })
+              .map(slot => (
+                <div
+                  key={slot.id}
+                  className={`p-3.5 rounded-2xl border text-xs flex flex-col justify-between gap-3 shadow-2xs transition ${
+                    slot.substituteTeacherName
+                      ? 'bg-amber-50/60 border-amber-300 ring-1 ring-amber-200'
+                      : 'bg-white border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-900 rounded-md text-[11px]">
+                        {slot.className}
+                      </span>
+                      <span className="text-slate-500 font-mono">
+                        {slot.day} • الحصة {slot.periodNumber}
+                      </span>
+                    </div>
+
+                    <div className="text-slate-900 font-extrabold text-sm">
+                      {slot.subject}
+                    </div>
+
+                    <div className="text-slate-600 text-[11px] flex items-center justify-between">
+                      <span>المعلم الأساسي:</span>
+                      <strong className="text-slate-800">{slot.teacherName || 'غير محدد'}</strong>
+                    </div>
+
+                    {/* Substitute Status Indicator */}
+                    <div className="pt-2 border-t border-slate-100">
+                      {slot.substituteTeacherName ? (
+                        <div className="p-2 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between gap-2">
+                          <div>
+                            <span className="text-[10px] font-bold text-emerald-800 block">
+                              ✓ المعلم البديل المعتمد:
+                            </span>
+                            <span className="font-extrabold text-emerald-950 text-xs">
+                              {slot.substituteTeacherName}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              updateTimetableSlot(slot.id, {
+                                substituteTeacherId: undefined,
+                                substituteTeacherName: undefined,
+                              });
+                            }}
+                            title="إلغاء تكليف البديل وإعادة الحصة للمعلّم الأصلي"
+                            className="p-1 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-slate-400 italic">
+                          لا يوجد معلم بديل (الحصة للمعلّم الأساسي)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingSubSlot(slot);
+                      setSubNameInput(slot.substituteTeacherName || '');
+                      setSubSelectUserId(slot.substituteTeacherId || '');
+                    }}
+                    className={`w-full h-8 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      slot.substituteTeacherName
+                        ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'
+                    }`}
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>{slot.substituteTeacherName ? 'تعديل اسم المعلم البديل' : '+ تكليف معلم بديل للحصة'}</span>
+                  </button>
+                </div>
+              ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* SECTION 2: PERIOD TIMINGS & ATTENDANCE WINDOWS */}
       {activeSection === 'timings' && (
@@ -1004,6 +1145,148 @@ export const ManagerControlCenter: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SUBSTITUTE TEACHER ASSIGNMENT MODAL (Direct Name Input or Dropdown) */}
+      {editingSubSlot && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900">
+                    تكليف وتعيين معلم بديل
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {editingSubSlot.className} • {editingSubSlot.day} (الحصة {editingSubSlot.periodNumber})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSubSlot(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Slot Details Summary Box */}
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-slate-500">المادة الدراسية:</span>
+                <span className="font-bold text-slate-900">{editingSubSlot.subject}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">المعلم الأساسي للحصة:</span>
+                <span className="font-bold text-slate-900">{editingSubSlot.teacherName || 'غير محدد'}</span>
+              </div>
+            </div>
+
+            {/* Input Form */}
+            <div className="space-y-3.5 text-xs">
+              {/* Option A: Select from Registered Staff */}
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
+                  1. اختيار من قائمة المعلمين المسجلين بالمدرسة:
+                </label>
+                <select
+                  value={subSelectUserId}
+                  onChange={e => {
+                    const selId = e.target.value;
+                    setSubSelectUserId(selId);
+                    if (selId) {
+                      const found = users.find(u => u.id === selId || u.teacherId === selId);
+                      if (found) {
+                        setSubNameInput(found.name);
+                      }
+                    }
+                  }}
+                  className="w-full h-10 px-3 bg-white border border-slate-300 rounded-xl font-bold text-slate-800 cursor-pointer"
+                >
+                  <option value="">-- اختر معلماً من القائمة لتعبئة الاسم تلقائياً --</option>
+                  {users
+                    .filter(u => u.role === 'teacher')
+                    .map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.subject || 'معلم'})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Option B: Custom Teacher Name Input (Explicitly Requested by Principal) */}
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
+                  2. أو كتابة اسم المعلم البديل يدويًا (اسم مخصص أو معلم خارجي):
+                </label>
+                <input
+                  type="text"
+                  value={subNameInput}
+                  onChange={e => setSubNameInput(e.target.value)}
+                  placeholder="اكتب اسم المعلم البديل هنا (مثال: أ. حمزة العبادي، أو معلم احتياط)..."
+                  className="w-full h-10 px-3 bg-white border border-amber-300 focus:border-amber-500 ring-1 ring-amber-100 rounded-xl font-bold text-slate-900 placeholder:text-slate-400"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  💡 بمجرد كتابة الاسم واعتماده، سيظهر هذا المعلم كبديل معتمد وتنتقل إليه صلاحية رصد الحضور لهذه الحصة.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 border-t border-slate-100">
+              {editingSubSlot.substituteTeacherName ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateTimetableSlot(editingSubSlot.id, {
+                      substituteTeacherId: undefined,
+                      substituteTeacherName: undefined,
+                    });
+                    setEditingSubSlot(null);
+                  }}
+                  className="w-full sm:w-auto h-9 px-3 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-bold text-xs cursor-pointer border border-red-200 transition flex items-center justify-center gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>إلغاء التكليف الحالي</span>
+                </button>
+              ) : <div />}
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => setEditingSubSlot(null)}
+                  className="h-9 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const finalName = subNameInput.trim();
+                    if (!finalName) return;
+                    const matched = users.find(
+                      u => u.id === subSelectUserId || u.name === finalName
+                    );
+                    updateTimetableSlot(editingSubSlot.id, {
+                      substituteTeacherId: matched ? matched.id : `sub-${Date.now()}`,
+                      substituteTeacherName: finalName,
+                    });
+                    setEditingSubSlot(null);
+                  }}
+                  disabled={!subNameInput.trim()}
+                  className="h-9 px-5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>اعتماد وحفظ المعلم البديل</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

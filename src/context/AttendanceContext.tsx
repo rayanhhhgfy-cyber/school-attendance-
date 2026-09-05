@@ -701,6 +701,10 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         s.teacherId === currentUser.teacherId ||
         s.substituteTeacherId === currentUser.id ||
         s.substituteTeacherId === currentUser.teacherId ||
+        (s.substituteTeacherName &&
+          (s.substituteTeacherName === currentUser.name ||
+            currentUser.name.includes(s.substituteTeacherName) ||
+            s.substituteTeacherName.includes(currentUser.name))) ||
         (currentUser.assignedClasses && currentUser.assignedClasses.includes(s.classId))
     );
   }, [currentUser, timetable]);
@@ -720,7 +724,16 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     const todayName = daysMap[jsDay] || 'الأحد';
 
     const teacherSlotsToday = timetable.filter(
-      s => s.day === todayName && (s.teacherId === currentUser.teacherId || (currentUser.assignedClasses && currentUser.assignedClasses.includes(s.classId)))
+      s =>
+        s.day === todayName &&
+        (s.teacherId === currentUser.teacherId ||
+          s.substituteTeacherId === currentUser.id ||
+          s.substituteTeacherId === currentUser.teacherId ||
+          (s.substituteTeacherName &&
+            (s.substituteTeacherName === currentUser.name ||
+              currentUser.name.includes(s.substituteTeacherName) ||
+              s.substituteTeacherName.includes(currentUser.name))) ||
+          (currentUser.assignedClasses && currentUser.assignedClasses.includes(s.classId)))
     );
 
     if (teacherSlotsToday.length === 0) return null;
@@ -781,11 +794,15 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     if (slot) {
       if (
         (slot.teacherId && slot.teacherId === currentUser.teacherId) ||
-        (slot.substituteTeacherId && (slot.substituteTeacherId === currentUser.id || slot.substituteTeacherId === currentUser.teacherId))
+        (slot.substituteTeacherId && (slot.substituteTeacherId === currentUser.id || slot.substituteTeacherId === currentUser.teacherId)) ||
+        (slot.substituteTeacherName &&
+          (slot.substituteTeacherName === currentUser.name ||
+            currentUser.name.includes(slot.substituteTeacherName) ||
+            slot.substituteTeacherName.includes(currentUser.name)))
       ) {
         return { allowed: true };
       }
-      if (slot.teacherId && slot.teacherId !== currentUser.teacherId && !slot.substituteTeacherId) {
+      if (slot.teacherId && slot.teacherId !== currentUser.teacherId && !slot.substituteTeacherId && !slot.substituteTeacherName) {
         return {
           allowed: false,
           reason: `هذه الحصة (${slot.subject}) مسندة إلى (${slot.teacherName || 'معلم آخر'}). بصفتك معلماً، يمكنك فقط رصد حصصك أو الحصص المكلف بها كمعلم بديل، ولا يمكن تعديل حصص المعلمين الآخرين إلا من قبل مدير المدرسة.`,
