@@ -49,6 +49,7 @@ export const TakeAttendanceView: React.FC = () => {
     markAllPresent,
     resetAttendanceSession,
     submitAttendanceSession,
+    reopenAttendanceSession,
     settings,
     fastLoadMode,
     quickAddStudentNote,
@@ -70,7 +71,7 @@ export const TakeAttendanceView: React.FC = () => {
   const [selectedStudentForModal, setSelectedStudentForModal] = useState<Student | null>(null);
 
   const authCheck = canUserEditAttendance(selectedClassId, selectedPeriod);
-  const isSessionLocked = settings.emergencyLockdown || !authCheck.allowed;
+  const isSessionLocked = settings.emergencyLockdown || !authCheck.allowed || isCurrentSessionSubmitted;
 
   const currentSessionKey = `${selectedClassId}_${currentDate}_p${selectedPeriod}`;
   const isDismissed = !!dismissedSessions[currentSessionKey];
@@ -177,8 +178,8 @@ export const TakeAttendanceView: React.FC = () => {
                     id="btn-reopen-submit-from-header"
                     type="button"
                     onClick={() => {
+                      reopenAttendanceSession();
                       setDismissedSessions(prev => ({ ...prev, [currentSessionKey]: false }));
-                      setShowConfirmModal(true);
                     }}
                     className="h-7 px-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition shadow-2xs cursor-pointer flex items-center gap-1"
                     title="إعادة فتح الكشف والتعديل وإعادة الحفظ"

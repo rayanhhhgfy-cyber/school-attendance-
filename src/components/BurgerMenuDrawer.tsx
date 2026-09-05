@@ -123,7 +123,7 @@ export const BurgerMenuDrawer: React.FC<BurgerMenuDrawerProps> = ({
                     <h2 className="text-base font-bold text-slate-900 leading-tight">
                       منصة الحضور المدرسي
                     </h2>
-                    <p className="text-xs text-slate-500 font-medium">مدرسة الأمل الابتدائية</p>
+                    <p className="text-xs text-slate-500 font-medium">مدرسة الملك حسين بن طلال الثانوية للبنين</p>
                   </div>
                 </div>
 

@@ -225,76 +225,74 @@ export const StudentCard: React.FC<StudentCardProps> = ({
           </div>
         )}
 
-        {/* Action Buttons: high-contrast, clean proportions */}
-        <div
-          className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-2 border-t border-slate-100"
-          role="group"
-          aria-label={`تحديد حالة الحضور للطالب ${student.name}`}
-        >
-          {/* Button 1: حاضر (Green) */}
-          <button
-            id={`btn-present-${student.id}`}
-            type="button"
-            disabled={isLocked}
-            onClick={() => onStatusChange('present')}
-            className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
-              currentStatus === 'present'
-                ? 'bg-emerald-700 text-white ring-2 ring-emerald-300 shadow-xs'
-                : 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100 border border-emerald-300'
-            } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+        {/* Action Buttons: Only shown when session is active and NOT locked/submitted */}
+        {!isLocked && (
+          <div
+            className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-2 border-t border-slate-100"
+            role="group"
+            aria-label={`تحديد حالة الحضور للطالب ${student.name}`}
           >
-            <Check className="w-4 h-4 stroke-[2.5]" />
-            <span>حاضر</span>
-          </button>
+            {/* Button 1: حاضر (Green) */}
+            <button
+              id={`btn-present-${student.id}`}
+              type="button"
+              onClick={() => onStatusChange('present')}
+              className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
+                currentStatus === 'present'
+                  ? 'bg-emerald-700 text-white ring-2 ring-emerald-300 shadow-xs'
+                  : 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100 border border-emerald-300'
+              }`}
+            >
+              <Check className="w-4 h-4 stroke-[2.5]" />
+              <span>حاضر</span>
+            </button>
 
-          {/* Button 2: غائب (Red) */}
-          <button
-            id={`btn-absent-${student.id}`}
-            type="button"
-            disabled={isLocked}
-            onClick={() => onStatusChange('absent')}
-            className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
-              currentStatus === 'absent'
-                ? 'bg-red-700 text-white ring-2 ring-red-300 shadow-xs'
-                : 'bg-red-50 text-red-900 hover:bg-red-100 border border-red-300'
-            } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <X className="w-4 h-4 stroke-[2.5]" />
-            <span>غائب</span>
-          </button>
+            {/* Button 2: غائب (Red) */}
+            <button
+              id={`btn-absent-${student.id}`}
+              type="button"
+              onClick={() => onStatusChange('absent')}
+              className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
+                currentStatus === 'absent'
+                  ? 'bg-red-700 text-white ring-2 ring-red-300 shadow-xs'
+                  : 'bg-red-50 text-red-900 hover:bg-red-100 border border-red-300'
+              }`}
+            >
+              <X className="w-4 h-4 stroke-[2.5]" />
+              <span>غائب</span>
+            </button>
 
-          {/* Button 3: متأخر (Amber) */}
-          <button
-            id={`btn-late-${student.id}`}
-            type="button"
-            disabled={isLocked}
-            onClick={() => onStatusChange('late')}
-            className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
-              currentStatus === 'late'
-                ? 'bg-amber-600 text-white ring-2 ring-amber-300 shadow-xs'
-                : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-300'
-            } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <Clock className="w-4 h-4 stroke-[2.5]" />
-            <span>متأخر</span>
-          </button>
+            {/* Button 3: متأخر (Amber) */}
+            <button
+              id={`btn-late-${student.id}`}
+              type="button"
+              onClick={() => onStatusChange('late')}
+              className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
+                currentStatus === 'late'
+                  ? 'bg-amber-600 text-white ring-2 ring-amber-300 shadow-xs'
+                  : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-300'
+              }`}
+            >
+              <Clock className="w-4 h-4 stroke-[2.5]" />
+              <span>متأخر</span>
+            </button>
 
-          {/* Button 4: عذر طبي / تصريح (Blue) */}
-          <button
-            id={`btn-excused-${student.id}`}
-            type="button"
-            disabled={isLocked}
-            onClick={() => onStatusChange('excused')}
-            className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
-              currentStatus === 'excused'
-                ? 'bg-blue-700 text-white ring-2 ring-blue-300 shadow-xs'
-                : 'bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-300'
-            } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <FileText className="w-4 h-4 stroke-[2.5]" />
-            <span>عذر طبي</span>
-          </button>
-        </div>
+            {/* Button 4: عذر طبي / تصريح (Blue) */}
+            <button
+              id={`btn-excused-${student.id}`}
+              type="button"
+              onClick={() => onStatusChange('excused')}
+              className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
+                currentStatus === 'excused'
+                  ? 'bg-blue-700 text-white ring-2 ring-blue-300 shadow-xs'
+                  : 'bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-300'
+              }`}
+            >
+              <FileText className="w-4 h-4 stroke-[2.5]" />
+              <span>عذر طبي</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Quick Note Modal */}

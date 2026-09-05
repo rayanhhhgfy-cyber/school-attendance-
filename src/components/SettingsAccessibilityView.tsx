@@ -866,7 +866,8 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
             )}
           </div>
 
-          {/* Reset Storage */}
+
+        {/* Reset Storage */}
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col justify-between gap-3">
             <div>
               <h4 className="text-xs sm:text-sm font-bold text-red-900 flex items-center gap-1.5">
@@ -891,6 +892,34 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
         <div className="text-[11px] text-slate-400 pt-2 text-center">
           آخر مزامنة وحفظ محلي: <span className="font-mono text-slate-600">{lastSavedAt}</span>
         </div>
+      </div>
+
+      {/* PROMINENT MOBILE & DESKTOP DOWNLOAD PWA BUTTON AT THE VERY BOTTOM */}
+      <div className="p-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-3xl shadow-lg border border-blue-800 space-y-3 text-center my-4">
+        <div className="flex items-center justify-center gap-2">
+          <Smartphone className="w-6 h-6 text-emerald-400" />
+          <h3 className="text-base sm:text-lg font-black">تحميل وتثبيت تطبيق المدرسة (PWA)</h3>
+        </div>
+        <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto opacity-90">
+          قم بتنزيل المنصة كتطبيق مثبت على شاشة هاتفك الذكي أو جهاز الحاسوب للوصول السريع بدون حوارات المتصفح وبدعم أوفلاين كامل.
+        </p>
+
+        <button
+          type="button"
+          id="btn-download-pwa-bottom"
+          onClick={install}
+          disabled={!isInstallable && !isInstalled}
+          className="w-full sm:w-auto h-12 px-8 bg-emerald-500 hover:bg-emerald-400 active:scale-98 text-slate-950 font-black rounded-2xl text-sm sm:text-base transition shadow-md inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed mx-auto"
+        >
+          <Download className="w-5 h-5 text-slate-950" />
+          <span>
+            {isInstalled
+              ? '✓ التطبيق مثبت على جهازك بالفعل'
+              : isInstallable
+              ? 'تحميل وتثبيت التطبيق الآن'
+              : 'تطبيق المدرسة جاهز ومثبت'}
+          </span>
+        </button>
       </div>
     </div>
   );

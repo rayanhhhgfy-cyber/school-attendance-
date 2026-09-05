@@ -178,24 +178,24 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="hidden md:flex max-w-7xl mx-auto px-4 py-2 items-center justify-between gap-2.5 border-b border-slate-100 text-xs">
         {/* Connection & Persistence Status Badges */}
         <div className="flex items-center flex-wrap gap-2">
-          {/* Online / Offline Status */}
+          {/* Online / Offline Status & Sync Queue */}
           {isOnline ? (
             <span
               id="status-online"
               className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-full font-semibold text-xs"
-              title="التطبيق متصل بالشبكة ويعمل بسلاسة"
+              title="التطبيق متصل بالشبكة والمزامنة التلقائية مع قاعدة البيانات نشطة"
             >
               <Wifi className="w-3.5 h-3.5 text-emerald-600" />
-              <span>متصل</span>
+              <span>متصل (مزامنة فورية)</span>
             </span>
           ) : (
             <span
               id="status-offline"
               className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-400 rounded-full font-bold text-xs animate-pulse"
-              title="التطبيق يعمل بدون اتصال ويحفظ كل حركة على الجهاز"
+              title="التطبيق يعمل بدون اتصال ويتم جدولة التغييرات في طابور المزامنة المحلي"
             >
               <WifiOff className="w-3.5 h-3.5 text-amber-700" />
-              <span>بدون إنترنت (جاهز)</span>
+              <span>طابور المزامنة المحلي (Off-line Ready)</span>
             </span>
           )}
 

@@ -196,6 +196,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 </>
               )}
             </button>
+
           </form>
 
           {/* Preset Quick Logins Section */}
