@@ -30,13 +30,17 @@ import {
 } from '../data/mockData';
 import { soundFx } from '../utils/audio';
 
-interface SessionMeta {
+export interface SessionMeta {
   submittedAt: string;
   total: number;
   present: number;
   absent: number;
   late: number;
   excused: number;
+  submittedBy?: string;
+  submittedTeacherName?: string;
+  periodNumber?: number;
+  classId?: string;
 }
 
 interface AttendanceContextType {
@@ -84,6 +88,9 @@ interface AttendanceContextType {
   currentRecords: Record<string, AttendanceEntry>;
   isCurrentSessionSubmitted: boolean;
   currentSessionMeta?: SessionMeta;
+  submittedSessions: Record<string, SessionMeta>;
+  isSessionSubmitted: (classId: string, periodNumber: number, date?: string) => boolean;
+  getSessionMeta: (classId: string, periodNumber: number, date?: string) => SessionMeta | undefined;
 
   // Attendance Actions & Authorization
   canUserEditAttendance: (classId: string, periodNumber: number) => { allowed: boolean; reason?: string };
@@ -394,6 +401,131 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const isCurrentSessionSubmitted = !!submittedSessions[currentSessionKey];
   const currentSessionMeta = submittedSessions[currentSessionKey];
 
+  // Helper methods to query submission state for any period
+  const isSessionSubmitted = (classId: string, periodNumber: number, date: string = currentDate): boolean => {
+    const key = `${classId}_${date}_p${periodNumber}`;
+    return !!submittedSessions[key];
+  };
+
+  const getSessionMeta = (classId: string, periodNumber: number, date: string = currentDate): SessionMeta | undefined => {
+    const key = `${classId}_${date}_p${periodNumber}`;
+    return submittedSessions[key];
+  };
+
+  // Helper to intelligently resolve the right initial class and period for a teacher
+  const resolveTeacherSlot = (
+    user: UserAccount,
+    customTimetable = timetable,
+    customSubmitted = submittedSessions,
+    customClasses = classes
+  ): { classId: string; periodNumber: number } | null => {
+    if (user.role !== 'teacher') return null;
+
+    const daysMap: Record<number, 'الأحد' | 'الإثنين' | 'الثلاثاء' | 'الأربعاء' | 'الخميس'> = {
+      0: 'الأحد',
+      1: 'الإثنين',
+      2: 'الثلاثاء',
+      3: 'الأربعاء',
+      4: 'الخميس',
+    };
+    const jsDay = new Date().getDay();
+    const todayName = daysMap[jsDay] || 'الأحد';
+
+    const teacherSlotsToday = customTimetable.filter(
+      s =>
+        s.day === todayName &&
+        (s.teacherId === user.teacherId ||
+          s.teacherId === user.id ||
+          s.substituteTeacherId === user.id ||
+          s.substituteTeacherId === user.teacherId ||
+          (s.substituteTeacherName &&
+            (s.substituteTeacherName === user.name ||
+              user.name.includes(s.substituteTeacherName) ||
+              s.substituteTeacherName.includes(user.name))) ||
+          (user.assignedClasses && user.assignedClasses.includes(s.classId)))
+    );
+
+    if (teacherSlotsToday.length > 0) {
+      // 1. Check if there is an active slot in session right now by bell schedule
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      for (const slot of teacherSlotsToday) {
+        const timing = periodTimings.find(pt => pt.periodNumber === slot.periodNumber);
+        if (timing) {
+          const [startH, startM] = timing.startTime.split(':').map(Number);
+          const [endH, endM] = timing.endTime.split(':').map(Number);
+          const startMin = startH * 60 + startM;
+          const endMin = endH * 60 + endM;
+          if (nowMinutes >= startMin - 10 && nowMinutes <= endMin + 15) {
+            return { classId: slot.classId, periodNumber: slot.periodNumber };
+          }
+        }
+      }
+
+      // 2. Find the first unsubmitted slot for today!
+      const unsubmittedSlot = teacherSlotsToday.find(
+        slot => !customSubmitted[`${slot.classId}_${currentDate}_p${slot.periodNumber}`]
+      );
+      if (unsubmittedSlot) {
+        return { classId: unsubmittedSlot.classId, periodNumber: unsubmittedSlot.periodNumber };
+      }
+
+      // 3. Fallback to the first slot today
+      return { classId: teacherSlotsToday[0].classId, periodNumber: teacherSlotsToday[0].periodNumber };
+    }
+
+    // If teacher has assignedClasses, default to first assigned class
+    if (user.assignedClasses && user.assignedClasses.length > 0) {
+      const validClass = customClasses.find(c => user.assignedClasses!.includes(c.id));
+      if (validClass) {
+        const anySlot = customTimetable.find(
+          s => s.classId === validClass.id && (s.teacherId === user.teacherId || s.teacherId === user.id)
+        );
+        return { classId: validClass.id, periodNumber: anySlot ? anySlot.periodNumber : 1 };
+      }
+    }
+
+    return null;
+  };
+
+  const handleSelectClass = (newClassId: string) => {
+    setSelectedClassId(newClassId);
+    if (currentUser?.role === 'teacher') {
+      const daysMap: Record<number, 'الأحد' | 'الإثنين' | 'الثلاثاء' | 'الأربعاء' | 'الخميس'> = {
+        0: 'الأحد',
+        1: 'الإثنين',
+        2: 'الثلاثاء',
+        3: 'الأربعاء',
+        4: 'الخميس',
+      };
+      const jsDay = new Date().getDay();
+      const todayName = daysMap[jsDay] || 'الأحد';
+      const slotForClass = timetable.find(
+        s =>
+          s.day === todayName &&
+          s.classId === newClassId &&
+          (s.teacherId === currentUser.teacherId ||
+            s.teacherId === currentUser.id ||
+            s.substituteTeacherId === currentUser.id ||
+            s.substituteTeacherId === currentUser.teacherId)
+      );
+      if (slotForClass) {
+        setSelectedPeriod(slotForClass.periodNumber);
+      }
+    }
+  };
+
+  // Automatically align teacher's class and period whenever currentUser changes
+  useEffect(() => {
+    if (currentUser?.role === 'teacher') {
+      const slot = resolveTeacherSlot(currentUser);
+      if (slot) {
+        setSelectedClassId(slot.classId);
+        setSelectedPeriod(slot.periodNumber);
+      }
+    }
+  }, [currentUser?.id]);
+
   // Set student status
   const setStudentStatus = (studentId: string, status: AttendanceStatus, note?: string) => {
     if (settings.emergencyLockdown) {
@@ -502,11 +634,21 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       absent,
       late,
       excused,
+      submittedBy: currentUser?.id,
+      submittedTeacherName: currentUser?.name || 'معلم الحصة',
+      periodNumber: selectedPeriod,
+      classId: selectedClassId,
     };
 
     setSubmittedSessions(prev => ({
       ...prev,
       [currentSessionKey]: meta,
+    }));
+
+    // Explicitly freeze and persist the records for this session in attendanceMap
+    setAttendanceMap(prev => ({
+      ...prev,
+      [currentSessionKey]: currentRecords,
     }));
 
     if (soundEnabled) soundFx.playSuccess();
@@ -647,6 +789,16 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     }
     sessionStorage.setItem(STORAGE_KEY_PREFIX + 'session_active', 'true');
     setCurrentUser(found);
+
+    // Auto-select the teacher's designated slot (class & period) for today
+    if (found.role === 'teacher') {
+      const slot = resolveTeacherSlot(found);
+      if (slot) {
+        setSelectedClassId(slot.classId);
+        setSelectedPeriod(slot.periodNumber);
+      }
+    }
+
     if (soundEnabled) soundFx.playSuccess();
     return { success: true };
   };
@@ -669,6 +821,15 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(newUser));
     } catch {}
     setCurrentUser(newUser);
+
+    if (newUser.role === 'teacher') {
+      const slot = resolveTeacherSlot(newUser);
+      if (slot) {
+        setSelectedClassId(slot.classId);
+        setSelectedPeriod(slot.periodNumber);
+      }
+    }
+
     if (soundEnabled) soundFx.playSuccess();
     return { success: true };
   };
@@ -681,6 +842,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       // ignore
     }
     setCurrentUser(null);
+    setSelectedPeriod(1);
+    setSelectedClassId(classes[0]?.id || 'class-9th');
     if (soundEnabled) soundFx.playTap();
   };
 
@@ -688,6 +851,13 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     const target = users.find(u => u.id === userId);
     if (target) {
       setCurrentUser(target);
+      if (target.role === 'teacher') {
+        const slot = resolveTeacherSlot(target);
+        if (slot) {
+          setSelectedClassId(slot.classId);
+          setSelectedPeriod(slot.periodNumber);
+        }
+      }
       if (soundEnabled) soundFx.playTap();
     }
   };
@@ -1013,7 +1183,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         updateClass,
         deleteClass,
         selectedClassId,
-        setSelectedClassId,
+        setSelectedClassId: handleSelectClass,
         selectedPeriod,
         setSelectedPeriod,
         currentDate,
@@ -1028,6 +1198,9 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         currentRecords,
         isCurrentSessionSubmitted,
         currentSessionMeta,
+        submittedSessions,
+        isSessionSubmitted,
+        getSessionMeta,
         canUserEditAttendance,
         setStudentStatus,
         markAllPresent,

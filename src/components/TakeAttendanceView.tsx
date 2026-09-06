@@ -56,6 +56,11 @@ export const TakeAttendanceView: React.FC = () => {
     currentUser,
     canUserEditAttendance,
     currentTeacherSlot,
+    timetable,
+    periodTimings,
+    submittedSessions,
+    isSessionSubmitted,
+    getSessionMeta,
   } = useAttendance();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +83,54 @@ export const TakeAttendanceView: React.FC = () => {
 
   // The bar is only shown when the session is NOT submitted, NOT manually dismissed, and user has permission to edit
   const shouldShowSubmitBar = !isCurrentSessionSubmitted && !isDismissed && authCheck.allowed;
+
+  // Day name for timetable lookup
+  const currentDayName = useMemo(() => {
+    const daysMap: Record<number, 'الأحد' | 'الإثنين' | 'الثلاثاء' | 'الأربعاء' | 'الخميس'> = {
+      0: 'الأحد',
+      1: 'الإثنين',
+      2: 'الثلاثاء',
+      3: 'الأربعاء',
+      4: 'الخميس',
+    };
+    const jsDay = new Date().getDay();
+    return daysMap[jsDay] || 'الأحد';
+  }, []);
+
+  // Timetable slot for the currently selected class and period
+  const currentPeriodSlot = useMemo(() => {
+    return timetable.find(
+      s => s.day === currentDayName && s.classId === selectedClassId && s.periodNumber === selectedPeriod
+    );
+  }, [timetable, currentDayName, selectedClassId, selectedPeriod]);
+
+  const currentPeriodTiming = useMemo(() => {
+    return periodTimings.find(t => t.periodNumber === selectedPeriod);
+  }, [periodTimings, selectedPeriod]);
+
+  // Check if current user (teacher) has a scheduled slot in this class today
+  const teacherScheduledSlotInThisClass = useMemo(() => {
+    if (currentUser?.role !== 'teacher') return null;
+    return timetable.find(
+      s =>
+        s.day === currentDayName &&
+        s.classId === selectedClassId &&
+        (s.teacherId === currentUser.teacherId ||
+          s.teacherId === currentUser.id ||
+          s.substituteTeacherId === currentUser.id ||
+          s.substituteTeacherId === currentUser.teacherId ||
+          (s.substituteTeacherName &&
+            (s.substituteTeacherName === currentUser.name ||
+              currentUser.name.includes(s.substituteTeacherName) ||
+              s.substituteTeacherName.includes(currentUser.name))))
+    );
+  }, [currentUser, currentDayName, selectedClassId, timetable]);
+
+  // Is teacher viewing a period other than their scheduled slot in this class?
+  const isViewingDifferentPeriodThanAssigned =
+    currentUser?.role === 'teacher' &&
+    teacherScheduledSlotInThisClass &&
+    teacherScheduledSlotInThisClass.periodNumber !== selectedPeriod;
 
   // Filtered Students list
   const filteredStudents = useMemo(() => {
@@ -172,21 +225,26 @@ export const TakeAttendanceView: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 rounded-full font-bold text-xs border border-emerald-300 dark:border-emerald-800/60">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
-                    <span>معتمد ومحفوظ ({currentSessionMeta?.submittedAt || ''})</span>
+                    <span>
+                      معتمد ومحفوظ ({currentSessionMeta?.submittedAt || ''})
+                      {currentSessionMeta?.submittedTeacherName ? ` • ${currentSessionMeta.submittedTeacherName}` : ''}
+                    </span>
                   </span>
-                  <button
-                    id="btn-reopen-submit-from-header"
-                    type="button"
-                    onClick={() => {
-                      reopenAttendanceSession();
-                      setDismissedSessions(prev => ({ ...prev, [currentSessionKey]: false }));
-                    }}
-                    className="h-7 px-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition shadow-2xs cursor-pointer flex items-center gap-1"
-                    title="إعادة فتح الكشف والتعديل وإعادة الحفظ"
-                  >
-                    <RotateCcw className="w-3 h-3 text-emerald-400" />
-                    <span>إعادة فتح الكشف للتعديل</span>
-                  </button>
+                  {(currentUser?.role === 'manager' || authCheck.allowed) && (
+                    <button
+                      id="btn-reopen-submit-from-header"
+                      type="button"
+                      onClick={() => {
+                        reopenAttendanceSession();
+                        setDismissedSessions(prev => ({ ...prev, [currentSessionKey]: false }));
+                      }}
+                      className="h-7 px-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition shadow-2xs cursor-pointer flex items-center gap-1"
+                      title="إعادة فتح الكشف والتعديل وإعادة الحفظ"
+                    >
+                      <RotateCcw className="w-3 h-3 text-emerald-400" />
+                      <span>إعادة فتح الكشف للتعديل</span>
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -241,25 +299,71 @@ export const TakeAttendanceView: React.FC = () => {
 
             {/* Period Selector */}
             <div>
-              <label htmlFor="select-period" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                الحصة:
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="select-period" className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  الحصة:
+                </label>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                  (✓ = معتمدة)
+                </span>
+              </div>
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-neutral-900 p-0.5 rounded-xl border border-slate-200 dark:border-neutral-800">
-                {[1, 2, 3, 4, 5].map(p => (
-                  <button
-                    key={p}
-                    id={`period-btn-${p}`}
-                    type="button"
-                    onClick={() => setSelectedPeriod(p)}
-                    className={`h-9 w-9 rounded-lg font-bold text-sm transition cursor-pointer ${
-                      selectedPeriod === p
-                        ? 'bg-blue-900 dark:bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-800'
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
+                {[1, 2, 3, 4, 5].map(p => {
+                  const pSubmitted = isSessionSubmitted(selectedClassId, p, currentDate);
+                  const pSlot = timetable.find(
+                    s => s.day === currentDayName && s.classId === selectedClassId && s.periodNumber === p
+                  );
+                  const isPMySlot =
+                    currentUser?.role === 'teacher' &&
+                    pSlot &&
+                    (pSlot.teacherId === currentUser.teacherId ||
+                      pSlot.teacherId === currentUser.id ||
+                      pSlot.substituteTeacherId === currentUser.id ||
+                      pSlot.substituteTeacherId === currentUser.teacherId ||
+                      (pSlot.substituteTeacherName &&
+                        (pSlot.substituteTeacherName === currentUser.name ||
+                          currentUser.name.includes(pSlot.substituteTeacherName) ||
+                          pSlot.substituteTeacherName.includes(currentUser.name))));
+
+                  return (
+                    <button
+                      key={p}
+                      id={`period-btn-${p}`}
+                      type="button"
+                      onClick={() => setSelectedPeriod(p)}
+                      title={`الحصة ${p}${pSlot ? `: ${pSlot.subject} (${pSlot.teacherName})` : ''} - ${pSubmitted ? 'معتمدة ومحفوظة ✓' : 'بانتظار الاعتماد'}`}
+                      className={`relative min-w-[38px] h-9 px-2 rounded-lg font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1 ${
+                        selectedPeriod === p
+                          ? 'bg-blue-900 dark:bg-blue-600 text-white shadow-xs'
+                          : isPMySlot
+                          ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700/70 hover:bg-amber-200'
+                          : pSubmitted
+                          ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-100'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-800'
+                      }`}
+                    >
+                      <span>{p}</span>
+                      {pSubmitted && (
+                        <CheckCircle
+                          className={`w-3 h-3 ${
+                            selectedPeriod === p ? 'text-emerald-300' : 'text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        />
+                      )}
+                      {isPMySlot && (
+                        <span
+                          className={`text-[9px] px-1 py-0.2 rounded font-black ${
+                            selectedPeriod === p
+                              ? 'bg-amber-400 text-slate-950'
+                              : 'bg-amber-500 text-white'
+                          }`}
+                        >
+                          حصتك
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -280,6 +384,68 @@ export const TakeAttendanceView: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Active Period & Timetable Info Strip */}
+        <div className="pt-3 border-t border-slate-100 dark:border-neutral-800/70 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1">
+              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 rounded-md border border-blue-200 dark:border-blue-800 font-bold">
+                الحصة {selectedPeriod}
+              </span>
+              <span className="text-blue-900 dark:text-blue-400 font-bold mr-1">
+                {currentPeriodSlot?.subject || 'مادة دراسية'}
+              </span>
+            </span>
+            <span className="text-slate-400">•</span>
+            <span className="text-slate-600 dark:text-slate-400">
+              المعلم: <strong className="text-slate-800 dark:text-slate-200">{currentPeriodSlot?.teacherName || 'غير مسند'}</strong>
+            </span>
+            {currentPeriodTiming && (
+              <>
+                <span className="text-slate-400">•</span>
+                <span className="text-slate-500 dark:text-slate-400 font-mono">
+                  {currentPeriodTiming.startTime} - {currentPeriodTiming.endTime}
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isCurrentSessionSubmitted ? (
+              <span className="inline-flex items-center gap-1 text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/60">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>
+                  معتمد ومحفوظ {currentSessionMeta?.submittedAt ? `(${currentSessionMeta.submittedAt})` : ''}
+                  {currentSessionMeta?.submittedTeacherName ? ` • ${currentSessionMeta.submittedTeacherName}` : ''}
+                </span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-amber-800 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/60">
+                <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>هذه الحصة بانتظار الاعتماد</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Notice for Teacher if viewing another period */}
+        {isViewingDifferentPeriodThanAssigned && teacherScheduledSlotInThisClass && (
+          <div className="mt-2.5 p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs text-blue-950 dark:text-blue-200">
+              <span className="p-1 bg-blue-100 dark:bg-blue-900/60 rounded-md">💡</span>
+              <span>
+                أنت تستعرض <strong>الحصة {selectedPeriod}</strong> ({isCurrentSessionSubmitted ? 'معتمدة' : 'غير معتمدة'}). حصتك المجدولة في هذا الفصل اليوم هي <strong>الحصة {teacherScheduledSlotInThisClass.periodNumber} ({teacherScheduledSlotInThisClass.subject})</strong>.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedPeriod(teacherScheduledSlotInThisClass.periodNumber)}
+              className="h-7 px-3 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
+            >
+              <span>الانتقال لحصتي (الحصة {teacherScheduledSlotInThisClass.periodNumber})</span>
+            </button>
+          </div>
+        )}
 
         {/* Attendance Stats Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 pt-4">
