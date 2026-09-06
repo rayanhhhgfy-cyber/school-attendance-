@@ -115,3 +115,6 @@ export interface AppNotification {
   read: boolean;
 }
 
+export type AppTheme = 'light' | 'dark';
+
+

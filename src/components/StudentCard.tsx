@@ -50,29 +50,29 @@ export const StudentCard: React.FC<StudentCardProps> = ({
     switch (currentStatus) {
       case 'present':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-full font-bold text-xs sm:text-sm">
-            <Check className="w-3.5 h-3.5 text-emerald-700" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60 rounded-full font-bold text-xs sm:text-sm">
+            <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
             <span>حاضر</span>
           </span>
         );
       case 'absent':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 text-red-900 border border-red-300 rounded-full font-bold text-xs sm:text-sm">
-            <X className="w-3.5 h-3.5 text-red-700" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 dark:bg-red-950/60 text-red-900 dark:text-red-300 border border-red-300 dark:border-red-800/60 rounded-full font-bold text-xs sm:text-sm">
+            <X className="w-3.5 h-3.5 text-red-700 dark:text-red-400" />
             <span>غائب اليوم</span>
           </span>
         );
       case 'late':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-full font-bold text-xs sm:text-sm">
-            <Clock className="w-3.5 h-3.5 text-amber-700" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 rounded-full font-bold text-xs sm:text-sm">
+            <Clock className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
             <span>متأخر</span>
           </span>
         );
       case 'excused':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-900 border border-blue-300 rounded-full font-bold text-xs sm:text-sm">
-            <FileText className="w-3.5 h-3.5 text-blue-700" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800/60 rounded-full font-bold text-xs sm:text-sm">
+            <FileText className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
             <span>عذر طبي</span>
           </span>
         );
@@ -88,14 +88,14 @@ export const StudentCard: React.FC<StudentCardProps> = ({
   return (
     <div
       id={`student-card-${student.id}`}
-      className={`relative bg-white rounded-xl border transition-all shadow-xs overflow-hidden ${
+      className={`relative bg-white dark:bg-neutral-900 rounded-xl border transition-all shadow-xs overflow-hidden ${
         currentStatus === 'absent'
-          ? 'border-red-300 bg-red-50/20'
+          ? 'border-red-300 dark:border-red-900/60 bg-red-50/20 dark:bg-red-950/20'
           : currentStatus === 'late'
-          ? 'border-amber-300 bg-amber-50/15'
+          ? 'border-amber-300 dark:border-amber-900/60 bg-amber-50/15 dark:bg-amber-950/20'
           : currentStatus === 'excused'
-          ? 'border-blue-300 bg-blue-50/15'
-          : 'border-slate-200 hover:border-slate-300'
+          ? 'border-blue-300 dark:border-blue-900/60 bg-blue-50/15 dark:bg-blue-950/20'
+          : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700'
       }`}
     >
       <div className="p-3.5 sm:p-4 flex flex-col gap-3">
@@ -107,25 +107,25 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               <div
                 className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-base flex-shrink-0 border ${
                   currentStatus === 'absent'
-                    ? 'bg-red-100 text-red-800 border-red-200'
+                    ? 'bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border-red-200 dark:border-red-900/60'
                     : currentStatus === 'late'
-                    ? 'bg-amber-100 text-amber-800 border-amber-200'
+                    ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-900/60'
                     : currentStatus === 'excused'
-                    ? 'bg-blue-100 text-blue-800 border-blue-200'
-                    : 'bg-slate-100 text-slate-800 border-slate-200'
+                    ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-900/60'
+                    : 'bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-neutral-700'
                 }`}
               >
                 {student.seatNumber}
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-lg bg-slate-200 text-slate-900 flex items-center justify-center font-bold text-sm border border-slate-300">
+              <div className="w-9 h-9 rounded-lg bg-slate-200 dark:bg-neutral-800 text-slate-900 dark:text-slate-100 flex items-center justify-center font-bold text-sm border border-slate-300 dark:border-neutral-700">
                 {student.seatNumber}
               </div>
             )}
 
             <div>
               <div className="flex items-center flex-wrap gap-2">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   {student.name}
                 </h3>
                 {student.consecutiveAbsences >= 2 && (
@@ -167,8 +167,8 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               title="إضافة ملاحظة على الطالب"
               className={`h-8 px-2 rounded-lg border flex items-center gap-1 text-xs font-semibold transition cursor-pointer ${
                 note
-                  ? 'bg-blue-50 text-blue-900 border-blue-300'
-                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border-blue-300 dark:border-blue-800'
+                  : 'bg-slate-50 dark:bg-neutral-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-700'
               }`}
             >
               <MessageSquarePlus className="w-3.5 h-3.5" />
@@ -182,9 +182,9 @@ export const StudentCard: React.FC<StudentCardProps> = ({
                 id={`btn-contact-${student.id}`}
                 onClick={() => onContactGuardian(student)}
                 title="التواصل مع ولي الأمر والواتساب"
-                className="h-8 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                className="h-8 px-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
               >
-                <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span className="hidden sm:inline">ولي الأمر</span>
               </button>
             )}
@@ -196,7 +196,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
                 id={`btn-edit-student-${student.id}`}
                 onClick={() => onEditStudent(student)}
                 title="تعديل بيانات الطالب"
-                className="h-8 w-8 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-900 border border-slate-200 hover:border-blue-300 flex items-center justify-center transition cursor-pointer"
+                className="h-8 w-8 rounded-lg bg-slate-50 dark:bg-neutral-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-300 border border-slate-200 dark:border-neutral-700 hover:border-blue-300 dark:hover:border-blue-800 flex items-center justify-center transition cursor-pointer"
               >
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
@@ -209,7 +209,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
                 id={`btn-delete-student-${student.id}`}
                 onClick={() => onDeleteStudent(student)}
                 title="حذف الطالب من الفصل"
-                className="h-8 w-8 rounded-lg bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-700 border border-slate-200 hover:border-red-300 flex items-center justify-center transition cursor-pointer"
+                className="h-8 w-8 rounded-lg bg-slate-50 dark:bg-neutral-800 hover:bg-red-50 dark:hover:bg-red-950/60 text-slate-400 dark:text-slate-400 hover:text-red-700 dark:hover:text-red-300 border border-slate-200 dark:border-neutral-700 hover:border-red-300 dark:hover:border-red-800 flex items-center justify-center transition cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -219,7 +219,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
 
         {/* Existing Note Banner if any */}
         {note && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-xs text-blue-900 flex items-start gap-1.5">
+          <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-lg p-2 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-1.5">
             <span className="font-bold whitespace-nowrap">ملاحظة المعلم:</span>
             <span>{note}</span>
           </div>
@@ -228,7 +228,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
         {/* Action Buttons: Only shown when session is active and NOT locked/submitted */}
         {!isLocked && (
           <div
-            className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-2 border-t border-slate-100"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-neutral-800"
             role="group"
             aria-label={`تحديد حالة الحضور للطالب ${student.name}`}
           >
@@ -239,8 +239,8 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               onClick={() => onStatusChange('present')}
               className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
                 currentStatus === 'present'
-                  ? 'bg-emerald-700 text-white ring-2 ring-emerald-300 shadow-xs'
-                  : 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100 border border-emerald-300'
+                  ? 'bg-emerald-700 dark:bg-emerald-600 text-white ring-2 ring-emerald-300 dark:ring-emerald-700 shadow-xs'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-800/60'
               }`}
             >
               <Check className="w-4 h-4 stroke-[2.5]" />
@@ -254,8 +254,8 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               onClick={() => onStatusChange('absent')}
               className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
                 currentStatus === 'absent'
-                  ? 'bg-red-700 text-white ring-2 ring-red-300 shadow-xs'
-                  : 'bg-red-50 text-red-900 hover:bg-red-100 border border-red-300'
+                  ? 'bg-red-700 dark:bg-red-600 text-white ring-2 ring-red-300 dark:ring-red-700 shadow-xs'
+                  : 'bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-300 dark:border-red-800/60'
               }`}
             >
               <X className="w-4 h-4 stroke-[2.5]" />
@@ -269,8 +269,8 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               onClick={() => onStatusChange('late')}
               className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
                 currentStatus === 'late'
-                  ? 'bg-amber-600 text-white ring-2 ring-amber-300 shadow-xs'
-                  : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-300'
+                  ? 'bg-amber-600 dark:bg-amber-500 text-white ring-2 ring-amber-300 dark:ring-amber-700 shadow-xs'
+                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-300 dark:border-amber-800/60'
               }`}
             >
               <Clock className="w-4 h-4 stroke-[2.5]" />
@@ -284,8 +284,8 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               onClick={() => onStatusChange('excused')}
               className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
                 currentStatus === 'excused'
-                  ? 'bg-blue-700 text-white ring-2 ring-blue-300 shadow-xs'
-                  : 'bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-300'
+                  ? 'bg-blue-700 dark:bg-blue-600 text-white ring-2 ring-blue-300 dark:ring-blue-700 shadow-xs'
+                  : 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-300 dark:border-blue-800/60'
               }`}
             >
               <FileText className="w-4 h-4 stroke-[2.5]" />
@@ -298,9 +298,9 @@ export const StudentCard: React.FC<StudentCardProps> = ({
       {/* Quick Note Modal */}
       {showNoteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-200 text-slate-900">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-200 dark:border-neutral-800 text-slate-900 dark:text-white">
             <h4 className="text-lg font-bold mb-1">ملاحظة للطالب: {student.name}</h4>
-            <p className="text-xs text-slate-500 mb-3">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
               يمكنك كتابة سبب الغياب أو التأخر (مثل: مستأذن للإشراف، موعد مستشفى، تأخر طابور الصباح).
             </p>
             <form onSubmit={handleSaveNoteSubmit}>
@@ -309,19 +309,19 @@ export const StudentCard: React.FC<StudentCardProps> = ({
                 onChange={e => setTempNote(e.target.value)}
                 placeholder="اكتب الملاحظة هنا..."
                 rows={3}
-                className="w-full p-2.5 text-sm border border-slate-300 rounded-xl focus:border-blue-700 focus:outline-hidden mb-3"
+                className="w-full p-2.5 text-sm bg-white dark:bg-neutral-950 text-slate-900 dark:text-white border border-slate-300 dark:border-neutral-700 rounded-xl focus:border-blue-700 focus:outline-hidden mb-3"
               />
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 h-10 bg-blue-900 hover:bg-blue-800 text-white font-bold text-sm rounded-lg transition cursor-pointer"
+                  className="flex-1 h-10 bg-blue-900 dark:bg-blue-600 hover:bg-blue-800 text-white font-bold text-sm rounded-lg transition cursor-pointer"
                 >
                   حفظ الملاحظة
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowNoteModal(false)}
-                  className="h-10 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-lg transition cursor-pointer"
+                  className="h-10 px-4 bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-700 dark:text-slate-200 font-semibold text-sm rounded-lg transition cursor-pointer"
                 >
                   إلغاء
                 </button>

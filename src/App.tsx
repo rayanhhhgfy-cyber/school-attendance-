@@ -31,7 +31,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col">
+    <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#000000] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200">
       {/* PWA Install Banner */}
       <PWAInstallBanner />
 

@@ -1,5 +1,273 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark, .dark *, [data-theme=dark], [data-theme=dark] *));
+
+/* Base Theme Variables & Backgrounds */
+:root {
+  --bg-app: #FFFFFF;
+  --text-app: #0F172A;
+  color-scheme: light;
+}
+
+:root.dark,
+[data-theme="dark"],
+body.dark {
+  --bg-app: #000000;
+  --text-app: #F8FAFC;
+  color-scheme: dark;
+}
+
+html, body {
+  background-color: var(--bg-app);
+  color: var(--text-app);
+  min-height: 100%;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Light Mode Guarantee: Pure #FFFFFF */
+:root:not(.dark),
+body:not(.dark) {
+  background-color: #FFFFFF !important;
+}
+
+/* Dark Mode Guarantee: Pure #000000 */
+.dark,
+.dark body {
+  background-color: #000000 !important;
+}
+
+/* Intelligent surfaces in Dark Mode */
+.dark .bg-white,
+.dark [class*="bg-white/"] {
+  background-color: #0d0d0f !important;
+  color: #F1F5F9 !important;
+}
+
+.dark .bg-slate-50,
+.dark [class*="bg-slate-50/"] {
+  background-color: #121215 !important;
+  color: #E2E8F0 !important;
+}
+
+.dark .bg-slate-100,
+.dark [class*="bg-slate-100/"] {
+  background-color: #18181c !important;
+  color: #E2E8F0 !important;
+}
+
+.dark .bg-slate-200 {
+  background-color: #222227 !important;
+  color: #CBD5E1 !important;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200 {
+  border-color: #24242a !important;
+}
+
+.dark .border-slate-300 {
+  border-color: #35353d !important;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #F8FAFC !important;
+}
+
+.dark .text-slate-700 {
+  color: #E2E8F0 !important;
+}
+
+.dark .text-slate-600 {
+  color: #CBD5E1 !important;
+}
+
+.dark .text-slate-500 {
+  color: #94A3B8 !important;
+}
+
+.dark .text-slate-400 {
+  color: #94A3B8 !important;
+}
+
+/* Emerald / Green Accents and Badges */
+.dark span[class*="bg-emerald-"],
+.dark button[class*="bg-emerald-"],
+.dark a[class*="bg-emerald-"] {
+  background-color: rgba(6, 78, 59, 0.4) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #6EE7B7 !important;
+}
+
+.dark .text-emerald-700,
+.dark .text-emerald-800,
+.dark .text-emerald-900 {
+  color: #34D399 !important;
+}
+
+.dark .border-emerald-200,
+.dark .border-emerald-300 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Red Accents and Badges */
+.dark span[class*="bg-red-"],
+.dark button[class*="bg-red-"],
+.dark a[class*="bg-red-"] {
+  background-color: rgba(127, 29, 29, 0.4) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #FCA5A5 !important;
+}
+
+.dark .text-red-700,
+.dark .text-red-800,
+.dark .text-red-900,
+.dark .text-red-950 {
+  color: #F87171 !important;
+}
+
+.dark .border-red-200,
+.dark .border-red-300,
+.dark .border-red-400 {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Amber / Yellow Accents and Badges */
+.dark span[class*="bg-amber-"],
+.dark button[class*="bg-amber-"],
+.dark a[class*="bg-amber-"] {
+  background-color: rgba(120, 53, 15, 0.4) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  color: #FDE68A !important;
+}
+
+.dark .text-amber-700,
+.dark .text-amber-800,
+.dark .text-amber-900,
+.dark .text-amber-950 {
+  color: #FBBF24 !important;
+}
+
+.dark .border-amber-200,
+.dark .border-amber-300,
+.dark .border-amber-400 {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Blue Accents and Badges */
+.dark span[class*="bg-blue-"],
+.dark button[class*="bg-blue-"],
+.dark a[class*="bg-blue-"] {
+  background-color: rgba(30, 58, 138, 0.4) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: #BFDBFE !important;
+}
+
+.dark .text-blue-700,
+.dark .text-blue-800,
+.dark .text-blue-900 {
+  color: #60A5FA !important;
+}
+
+.dark .border-blue-200,
+.dark .border-blue-300 {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Purple Accents and Badges */
+.dark span[class*="bg-purple-"],
+.dark button[class*="bg-purple-"],
+.dark a[class*="bg-purple-"] {
+  background-color: rgba(88, 28, 135, 0.4) !important;
+  border-color: rgba(168, 85, 247, 0.3) !important;
+  color: #E9D5FF !important;
+}
+
+.dark .text-purple-700,
+.dark .text-purple-800,
+.dark .text-purple-900 {
+  color: #C084FC !important;
+}
+
+.dark .border-purple-200,
+.dark .border-purple-300 {
+  border-color: rgba(168, 85, 247, 0.3) !important;
+}
+
+/* Sticky Submit Bar in Dark Mode */
+.dark #sticky-submit-bar,
+[data-theme="dark"] #sticky-submit-bar {
+  background-color: #0d0d10 !important;
+  border-color: #27272a !important;
+  color: #F8FAFC !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.95), 0 8px 10px -6px rgba(0, 0, 0, 0.95) !important;
+}
+
+.dark #sticky-submit-bar p {
+  color: #94A3B8 !important;
+}
+
+/* Modals & Dialogs in Dark Mode */
+.dark [role="dialog"] {
+  background-color: #121215 !important;
+  border-color: #27272A !important;
+  color: #F8FAFC !important;
+}
+
+/* Hover States in Dark Mode */
+.dark .hover\:bg-slate-100:hover {
+  background-color: #27272A !important;
+}
+
+.dark .hover\:bg-slate-200:hover {
+  background-color: #35353d !important;
+}
+
+.dark .hover\:bg-blue-100:hover {
+  background-color: rgba(30, 58, 138, 0.5) !important;
+}
+
+.dark .hover\:bg-emerald-100:hover {
+  background-color: rgba(6, 78, 59, 0.5) !important;
+}
+
+.dark .hover\:bg-red-100:hover {
+  background-color: rgba(127, 29, 29, 0.5) !important;
+}
+
+.dark .hover\:bg-amber-100:hover {
+  background-color: rgba(120, 53, 15, 0.5) !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  background-color: #0d0d0d !important;
+  color: #F8FAFC !important;
+  border-color: #2e2e2e !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748B !important;
+}
+
+/* Dark mode scrollbars */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #000000;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
 /* Focus and active accessibility outlines */
 button:focus-visible,
 select:focus-visible,
@@ -14,3 +282,4 @@ html {
   scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
 }
+

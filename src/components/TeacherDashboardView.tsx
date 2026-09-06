@@ -55,7 +55,7 @@ export const TeacherDashboardView: React.FC = () => {
     periodNumber: 1,
     timeRange: '08:00 - 08:45 ص',
     subject: currentUser?.subject || 'لغتي الجميلة',
-    classId: classes[0]?.id || 'class-1a',
+    classId: classes[0]?.id || 'class-9th',
     room: 'قاعة 101',
   });
 
@@ -65,7 +65,7 @@ export const TeacherDashboardView: React.FC = () => {
   const [selectedStudentForModal, setSelectedStudentForModal] = useState<Student | null>(null);
 
   const [selectedStudentFilterClass, setSelectedStudentFilterClass] = useState<string>(
-    currentUser?.assignedClasses?.[0] || classes[0]?.id || 'class-1a'
+    currentUser?.assignedClasses?.[0] || classes[0]?.id || 'class-9th'
   );
 
   // Filter students for the teacher's selected group
@@ -249,21 +249,21 @@ export const TeacherDashboardView: React.FC = () => {
       </div>
 
       {/* 2. TEACHER SCHEDULE MANAGEMENT (Add / Edit My Schedule) */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-neutral-800 pb-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-blue-100 text-blue-900 rounded-full font-bold text-xs">
+              <span className="px-2.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 rounded-full font-bold text-xs">
                 الجدول المدرسي للمعلم
               </span>
-              <span className="text-xs text-slate-500 font-medium">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 إجمالي حصصك المسندة: {allAssignedTeacherSlots.length} حصة
               </span>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mt-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
               حصصي المعتمدة مع إمكانية الإضافة والتعديل
             </h3>
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               يمكنك إضافة وتعديل حصصك في جدول المدرسة، والتحضير المباشر لكل حصة من حصصك.
             </p>
           </div>
@@ -280,9 +280,9 @@ export const TeacherDashboardView: React.FC = () => {
         </div>
 
         {allAssignedTeacherSlots.length === 0 ? (
-          <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-500">
+          <div className="p-8 text-center bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-slate-400">
             <Calendar className="w-10 h-10 mx-auto text-slate-400 mb-2" />
-            <p className="font-bold text-sm text-slate-700">لم يتم إسناد أي حصص لجدولك بعد</p>
+            <p className="font-bold text-sm text-slate-700 dark:text-slate-300">لم يتم إسناد أي حصص لجدولك بعد</p>
             <p className="text-xs mt-1">اضغط على زر "إضافة حصة لجدولي" أعلاه لإدراج أول حصة لك.</p>
           </div>
         ) : (
@@ -292,29 +292,29 @@ export const TeacherDashboardView: React.FC = () => {
               return (
                 <div
                   key={slot.id}
-                  className="p-4 bg-slate-50 hover:bg-slate-100/80 rounded-2xl border border-slate-200 transition flex flex-col justify-between space-y-3"
+                  className="p-4 bg-slate-50 dark:bg-neutral-950 hover:bg-slate-100/80 dark:hover:bg-neutral-800/80 rounded-2xl border border-slate-200 dark:border-neutral-800 transition flex flex-col justify-between space-y-3"
                 >
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-neutral-800 pb-2">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-900 rounded-md font-bold text-xs">
+                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 rounded-md font-bold text-xs">
                         يوم {slot.day}
                       </span>
-                      <span className="font-bold text-xs text-slate-700">
+                      <span className="font-bold text-xs text-slate-700 dark:text-slate-300">
                         الحصة {slot.periodNumber}
                       </span>
                     </div>
-                    <span className="text-[11px] font-mono text-slate-500">{slot.timeRange}</span>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{slot.timeRange}</span>
                   </div>
 
                   <div>
-                    <h4 className="font-black text-slate-900 text-sm">{slot.className}</h4>
-                    <div className="flex items-center gap-3 text-xs text-slate-600 mt-1">
+                    <h4 className="font-black text-slate-900 dark:text-white text-sm">{slot.className}</h4>
+                    <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300 mt-1">
                       <span className="flex items-center gap-1">
-                        <BookOpen className="w-3.5 h-3.5 text-blue-700" />
+                        <BookOpen className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
                         <span>{slot.subject}</span>
                       </span>
                       <span className="flex items-center gap-1 font-mono">
-                        <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                        <MapPin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                         <span>{slot.room}</span>
                       </span>
                     </div>
@@ -334,7 +334,7 @@ export const TeacherDashboardView: React.FC = () => {
                       type="button"
                       onClick={() => handleOpenEditSlot(slot)}
                       title="تعديل الحصة"
-                      className="h-8 w-8 bg-white hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 flex items-center justify-center transition cursor-pointer"
+                      className="h-8 w-8 bg-white dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center transition cursor-pointer"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
@@ -347,7 +347,7 @@ export const TeacherDashboardView: React.FC = () => {
                         }
                       }}
                       title="حذف الحصة"
-                      className="h-8 w-8 bg-white hover:bg-red-50 text-red-600 rounded-xl border border-slate-200 flex items-center justify-center transition cursor-pointer"
+                      className="h-8 w-8 bg-white dark:bg-neutral-800 hover:bg-red-50 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 rounded-xl border border-slate-200 dark:border-neutral-700 flex items-center justify-center transition cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -360,19 +360,19 @@ export const TeacherDashboardView: React.FC = () => {
       </div>
 
       {/* 3. MY GROUP & ABSENT STUDENTS OVERVIEW */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-neutral-800 pb-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 rounded-full font-bold text-xs">
+              <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 rounded-full font-bold text-xs">
                 مجموعتي وطلابي
               </span>
-              <span className="text-xs text-slate-500 font-medium">متابعة دقيقة لحالة الحضور والغياب</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">متابعة دقيقة لحالة الحضور والغياب</span>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mt-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
               قائمة طلاب المجموعة ومتابعة الغياب
             </h3>
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               يمكنك كمعلم متابعة من هم الطلاب الحاضرون والغائبون في مجموعتك والتعديل على حضورهم.
             </p>
           </div>
@@ -401,18 +401,18 @@ export const TeacherDashboardView: React.FC = () => {
                 setStudentModalMode('bulk_add');
                 setIsStudentModalOpen(true);
               }}
-              className="h-9 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1 border border-slate-300 transition cursor-pointer"
+              className="h-9 px-3 bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1 border border-slate-300 dark:border-neutral-700 transition cursor-pointer"
             >
-              <Users className="w-3.5 h-3.5 text-blue-700" />
+              <Users className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
               <span className="hidden sm:inline">إضافة سريعة بالأسماء</span>
             </button>
 
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-slate-600 whitespace-nowrap">الفصل:</span>
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">الفصل:</span>
               <select
                 value={selectedStudentFilterClass}
                 onChange={e => setSelectedStudentFilterClass(e.target.value)}
-                className="h-9 px-3 bg-slate-100 text-slate-900 font-bold rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-hidden cursor-pointer"
+                className="h-9 px-3 bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-white font-bold rounded-xl border border-slate-300 dark:border-neutral-700 text-xs sm:text-sm focus:outline-hidden cursor-pointer"
               >
                 {classes.map(c => (
                   <option key={c.id} value={c.id}>
@@ -425,10 +425,10 @@ export const TeacherDashboardView: React.FC = () => {
         </div>
 
         {/* Student Cards in Teacher View */}
-        <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+        <div className="overflow-x-auto border border-slate-200 dark:border-neutral-800 rounded-2xl">
           <table className="w-full text-right border-collapse text-xs sm:text-sm">
             <thead>
-              <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
+              <tr className="bg-slate-100 dark:bg-neutral-800 border-b border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-slate-200 font-bold">
                 <th className="p-3">#</th>
                 <th className="p-3">اسم الطالب</th>
                 <th className="p-3">رقم المقعد</th>
@@ -437,10 +437,10 @@ export const TeacherDashboardView: React.FC = () => {
                 <th className="p-3 text-center">إجراءات الطالب</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
+            <tbody className="divide-y divide-slate-100 dark:divide-neutral-800 font-medium">
               {groupStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                  <td colSpan={6} className="p-8 text-center text-slate-500 dark:text-slate-400">
                     لا يوجد طلاب مسجلون في هذا الفصل حالياً. اضغط على "إضافة طالب" بالأعلى لإضافتهم.
                   </td>
                 </tr>
@@ -449,40 +449,40 @@ export const TeacherDashboardView: React.FC = () => {
                   const rec = currentRecords[student.id];
                   const status: AttendanceStatus = rec?.status || 'present';
                   return (
-                    <tr key={student.id} className="hover:bg-slate-50 transition">
+                    <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition">
                       <td className="p-3 font-mono text-slate-400">{idx + 1}</td>
                       <td className="p-3">
-                        <span className="font-bold text-slate-900 block">{student.name}</span>
+                        <span className="font-bold text-slate-900 dark:text-white block">{student.name}</span>
                         <span className="text-[11px] text-slate-400 font-mono">هوية: {student.nationalId}</span>
                       </td>
-                      <td className="p-3 font-mono font-bold text-blue-900">
+                      <td className="p-3 font-mono font-bold text-blue-900 dark:text-blue-400">
                         مقعد {student.seatNumber}
                       </td>
-                      <td className="p-3 font-mono text-slate-600" dir="ltr">
+                      <td className="p-3 font-mono text-slate-600 dark:text-slate-400" dir="ltr">
                         {student.guardianPhone}
                       </td>
                       <td className="p-3">
                         {status === 'present' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-full font-bold text-xs">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 rounded-full font-bold text-xs">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                             <span>حاضر اليوم</span>
                           </span>
                         )}
                         {status === 'absent' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-red-100 text-red-900 border border-red-300 rounded-full font-bold text-xs">
-                            <XCircle className="w-3.5 h-3.5 text-red-700" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-red-100 dark:bg-red-950/60 text-red-900 dark:text-red-300 border border-red-300 dark:border-red-800 rounded-full font-bold text-xs">
+                            <XCircle className="w-3.5 h-3.5 text-red-700 dark:text-red-400" />
                             <span>غائب اليوم</span>
                           </span>
                         )}
                         {status === 'late' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-full font-bold text-xs">
-                            <Clock className="w-3.5 h-3.5 text-amber-700" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 rounded-full font-bold text-xs">
+                            <Clock className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
                             <span>متأخر</span>
                           </span>
                         )}
                         {status === 'excused' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-100 text-blue-900 border border-blue-300 rounded-full font-bold text-xs">
-                            <AlertCircle className="w-3.5 h-3.5 text-blue-700" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800 rounded-full font-bold text-xs">
+                            <AlertCircle className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
                             <span>مستأذن بعذر</span>
                           </span>
                         )}
@@ -499,7 +499,7 @@ export const TeacherDashboardView: React.FC = () => {
                               setIsStudentModalOpen(true);
                             }}
                             title="التواصل مع ولي الأمر والواتساب"
-                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition cursor-pointer"
+                            className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition cursor-pointer"
                           >
                             <Phone className="w-3.5 h-3.5" />
                           </button>
@@ -514,7 +514,7 @@ export const TeacherDashboardView: React.FC = () => {
                               setIsStudentModalOpen(true);
                             }}
                             title="تعديل بيانات الطالب"
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-900 border border-slate-200 transition cursor-pointer"
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-neutral-800 hover:bg-blue-50 dark:hover:bg-neutral-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-neutral-700 transition cursor-pointer"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -529,7 +529,7 @@ export const TeacherDashboardView: React.FC = () => {
                               setIsStudentModalOpen(true);
                             }}
                             title="حذف الطالب من الفصل"
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-700 border border-slate-200 transition cursor-pointer"
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-neutral-800 hover:bg-red-50 dark:hover:bg-red-950/50 text-slate-400 hover:text-red-700 dark:hover:text-red-400 border border-slate-200 dark:border-neutral-700 transition cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -547,7 +547,7 @@ export const TeacherDashboardView: React.FC = () => {
       {/* SLOT MODAL (Add / Edit Slot) */}
       {showSlotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 overflow-hidden text-right">
+          <div className="bg-white dark:bg-neutral-900 w-full max-w-sm rounded-2xl shadow-xl border border-slate-200 dark:border-neutral-800 overflow-hidden text-right">
             <div className="bg-blue-900 text-white p-4 flex items-center justify-between">
               <h3 className="font-bold text-base">
                 {editingSlotId ? 'تعديل الحصة الدراسية' : 'إضافة حصة لجدولك'}
@@ -563,7 +563,7 @@ export const TeacherDashboardView: React.FC = () => {
 
             <form onSubmit={handleSaveSlot} className="p-4 space-y-3 text-xs sm:text-sm">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">اليوم:</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">اليوم:</label>
                 <select
                   value={slotForm.day}
                   onChange={e =>
@@ -572,7 +572,7 @@ export const TeacherDashboardView: React.FC = () => {
                       day: e.target.value as 'الأحد' | 'الإثنين' | 'الثلاثاء' | 'الأربعاء' | 'الخميس',
                     }))
                   }
-                  className="w-full h-9 px-2.5 bg-slate-50 border border-slate-300 rounded-lg font-bold"
+                  className="w-full h-9 px-2.5 bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-white border border-slate-300 dark:border-neutral-700 rounded-lg font-bold"
                 >
                   <option value="الأحد">الأحد</option>
                   <option value="الإثنين">الإثنين</option>
@@ -584,13 +584,13 @@ export const TeacherDashboardView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">رقم الحصة:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">رقم الحصة:</label>
                   <select
                     value={slotForm.periodNumber}
                     onChange={e =>
                       setSlotForm(prev => ({ ...prev, periodNumber: Number(e.target.value) }))
                     }
-                    className="w-full h-9 px-2.5 bg-slate-50 border border-slate-300 rounded-lg font-bold"
+                    className="w-full h-9 px-2.5 bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-white border border-slate-300 dark:border-neutral-700 rounded-lg font-bold"
                   >
                     {[1, 2, 3, 4, 5, 6, 7].map(num => (
                       <option key={num} value={num}>
@@ -601,11 +601,11 @@ export const TeacherDashboardView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">الفصل الدراسي:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">الفصل الدراسي:</label>
                   <select
                     value={slotForm.classId}
                     onChange={e => setSlotForm(prev => ({ ...prev, classId: e.target.value }))}
-                    className="w-full h-9 px-2.5 bg-slate-50 border border-slate-300 rounded-lg font-bold"
+                    className="w-full h-9 px-2.5 bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-white border border-slate-300 dark:border-neutral-700 rounded-lg font-bold"
                   >
                     {classes.map(c => (
                       <option key={c.id} value={c.id}>
@@ -618,33 +618,33 @@ export const TeacherDashboardView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">المادة:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">المادة:</label>
                   <input
                     type="text"
                     value={slotForm.subject}
                     onChange={e => setSlotForm(prev => ({ ...prev, subject: e.target.value }))}
                     required
-                    className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-lg font-medium"
+                    className="w-full h-9 px-3 bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-white border border-slate-300 dark:border-neutral-700 rounded-lg font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">القاعة / الغرفة:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">القاعة / الغرفة:</label>
                   <input
                     type="text"
                     value={slotForm.room}
                     onChange={e => setSlotForm(prev => ({ ...prev, room: e.target.value }))}
                     placeholder="قاعة 101"
-                    className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-lg font-medium"
+                    className="w-full h-9 px-3 bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-white border border-slate-300 dark:border-neutral-700 rounded-lg font-medium"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-neutral-800">
                 <button
                   type="button"
                   onClick={() => setShowSlotModal(false)}
-                  className="h-9 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold cursor-pointer"
+                  className="h-9 px-4 bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold cursor-pointer"
                 >
                   إلغاء
                 </button>

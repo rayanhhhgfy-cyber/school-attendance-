@@ -16,6 +16,7 @@ import {
   StaffRole,
   UserAccount,
   PeriodTimingConfig,
+  AppTheme,
 } from '../types';
 import {
   INITIAL_CLASSES,
@@ -47,6 +48,7 @@ interface AttendanceContextType {
   currentUser: UserAccount | null;
   users: UserAccount[];
   login: (username: string, password: string) => { success: boolean; message?: string };
+  registerUser: (userData: Omit<UserAccount, 'id'>) => { success: boolean; message?: string };
   logout: () => void;
   switchUser: (userId: string) => void;
   addUserAccount: (user: Omit<UserAccount, 'id'>) => void;
@@ -59,7 +61,7 @@ interface AttendanceContextType {
 
   // Class & Session selection
   classes: SchoolClass[];
-  addClass: (cls: Omit<SchoolClass, 'id'>) => void;
+  addClass: (cls: Omit<SchoolClass, 'id'>) => SchoolClass;
   updateClass: (id: string, updates: Partial<SchoolClass>) => void;
   deleteClass: (id: string) => void;
   selectedClassId: string;
@@ -114,6 +116,9 @@ interface AttendanceContextType {
   clearAllNotifications: () => void;
 
   // System Preferences
+  theme: AppTheme;
+  setTheme: (theme: AppTheme) => void;
+  toggleTheme: () => void;
   fastLoadMode: boolean;
   setFastLoadMode: (mode: boolean) => void;
   soundEnabled: boolean;
@@ -146,7 +151,16 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   // Users & Authentication
   const [users, setUsers] = useState<UserAccount[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'users');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
+    if (saved) {
+      try {
+        const parsed: UserAccount[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasOldClasses = parsed.some(u => u.assignedClasses?.some(c => c.includes('class-1a') || c.includes('class-2b')));
+          if (!hasOldClasses) return parsed;
+        }
+      } catch {}
+    }
+    return INITIAL_USERS;
   });
 
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
@@ -160,15 +174,31 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   // Classes & Students
   const [classes, setClasses] = useState<SchoolClass[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'classes');
-    return saved ? JSON.parse(saved) : INITIAL_CLASSES;
+    if (saved) {
+      try {
+        const parsed: SchoolClass[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(c => c.id === 'class-1a' || c.name.includes('الأول'))) {
+          return parsed;
+        }
+      } catch {}
+    }
+    return INITIAL_CLASSES;
   });
 
   const [students, setStudents] = useState<Student[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'students');
-    return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+    if (saved) {
+      try {
+        const parsed: Student[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(s => s.classId === 'class-1a')) {
+          return parsed;
+        }
+      } catch {}
+    }
+    return INITIAL_STUDENTS;
   });
 
-  const [selectedClassId, setSelectedClassId] = useState<string>('class-1a');
+  const [selectedClassId, setSelectedClassId] = useState<string>('class-9th');
   const [selectedPeriod, setSelectedPeriod] = useState<number>(1);
   const [currentDate, setCurrentDate] = useState<string>(() => {
     const today = new Date();
@@ -189,10 +219,10 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     const today = new Date().toISOString().split('T')[0];
     const initialMap: Record<string, Record<string, AttendanceEntry>> = {};
     
-    // Default everyone in 1A to present, with 1 absent and 1 late for realistic pulse
-    const key = `class-1a_${today}_p1`;
+    // Default everyone in 9th grade to present, with 1 absent and 1 late for realistic pulse
+    const key = `class-9th_${today}_p1`;
     const records: Record<string, AttendanceEntry> = {};
-    INITIAL_STUDENTS.filter(s => s.classId === 'class-1a').forEach((s, idx) => {
+    INITIAL_STUDENTS.filter(s => s.classId === 'class-9th').forEach((s, idx) => {
       let status: AttendanceStatus = 'present';
       if (idx === 1) status = 'absent';
       if (idx === 3) status = 'late';
@@ -215,13 +245,29 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   // Staff
   const [staff, setStaff] = useState<StaffMember[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'staff');
-    return saved ? JSON.parse(saved) : INITIAL_STAFF;
+    if (saved) {
+      try {
+        const parsed: StaffMember[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(s => s.assignedClasses?.includes('class-1a'))) {
+          return parsed;
+        }
+      } catch {}
+    }
+    return INITIAL_STAFF;
   });
 
   // Timetable
   const [timetable, setTimetable] = useState<TimetableSlot[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'timetable');
-    return saved ? JSON.parse(saved) : INITIAL_TIMETABLE;
+    if (saved) {
+      try {
+        const parsed: TimetableSlot[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(t => t.classId === 'class-1a')) {
+          return parsed;
+        }
+      } catch {}
+    }
+    return INITIAL_TIMETABLE;
   });
 
   // Settings
@@ -237,6 +283,41 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   });
 
   // Preferences
+  const [theme, setThemeState] = useState<AppTheme>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  const setTheme = (newTheme: AppTheme) => {
+    setThemeState(newTheme);
+    try {
+      localStorage.setItem(STORAGE_KEY_PREFIX + 'theme', newTheme);
+    } catch {
+      // ignore
+    }
+  };
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+  };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.setAttribute('data-theme', 'dark');
+      document.body.classList.add('dark');
+      document.body.setAttribute('data-theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      root.setAttribute('data-theme', 'light');
+      document.body.classList.remove('dark');
+      document.body.setAttribute('data-theme', 'light');
+    }
+  }, [theme]);
+
   const [fastLoadMode, setFastLoadModeState] = useState<boolean>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'fast_load');
     return saved ? JSON.parse(saved) : false;
@@ -496,7 +577,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   // Trigger test smart alert (5 min before class)
-  const triggerTestAlert = (classId = 'class-1a', customMessage?: string) => {
+  const triggerTestAlert = (classId = 'class-9th', customMessage?: string) => {
     if (soundEnabled) soundFx.playAlert();
     const targetClass = classes.find(c => c.id === classId) || classes[0];
     const alertId = 'notif-' + Date.now();
@@ -570,6 +651,28 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     return { success: true };
   };
 
+  const registerUser = (userData: Omit<UserAccount, 'id'>) => {
+    // Check if username already exists
+    const cleanUsername = userData.username.trim().toLowerCase();
+    if (users.some(u => u.username.toLowerCase() === cleanUsername)) {
+      return { success: false, message: 'اسم المستخدم مسجل مسبقاً، يرجى اختيار اسم مستخدم آخر.' };
+    }
+    const id = 'user-' + Date.now();
+    const newUser: UserAccount = {
+      ...userData,
+      username: userData.username.trim(),
+      id,
+    };
+    setUsers(prev => [newUser, ...prev]);
+    sessionStorage.setItem(STORAGE_KEY_PREFIX + 'session_active', 'true');
+    try {
+      localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(newUser));
+    } catch {}
+    setCurrentUser(newUser);
+    if (soundEnabled) soundFx.playSuccess();
+    return { success: true };
+  };
+
   const logout = () => {
     sessionStorage.removeItem(STORAGE_KEY_PREFIX + 'session_active');
     try {
@@ -623,11 +726,17 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   // Class Management
-  const addClass = (newClsData: Omit<SchoolClass, 'id'>) => {
+  const addClass = (newClsData: Omit<SchoolClass, 'id'>): SchoolClass => {
     const id = 'class-' + Date.now();
-    const newCls: SchoolClass = { ...newClsData, id };
+    const newCls: SchoolClass = {
+      studentCount: 0,
+      homeroomTeacher: 'غير محدد',
+      ...newClsData,
+      id,
+    };
     setClasses(prev => [...prev, newCls]);
     if (soundEnabled) soundFx.playSuccess();
+    return newCls;
   };
 
   const updateClass = (id: string, updates: Partial<SchoolClass>) => {
@@ -638,7 +747,20 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const deleteClass = (id: string) => {
-    setClasses(prev => prev.filter(c => c.id !== id));
+    setClasses(prev => {
+      const remaining = prev.filter(c => c.id !== id);
+      if (selectedClassId === id && remaining.length > 0) {
+        setSelectedClassId(remaining[0].id);
+      }
+      return remaining;
+    });
+    // Remove class from users' assignedClasses list
+    setUsers(prev =>
+      prev.map(u => ({
+        ...u,
+        assignedClasses: u.assignedClasses ? u.assignedClasses.filter(c => c !== id) : undefined,
+      }))
+    );
     if (soundEnabled) soundFx.playTap();
   };
 
@@ -878,6 +1000,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         currentUser,
         users,
         login,
+        registerUser,
         logout,
         switchUser,
         addUserAccount,
@@ -931,6 +1054,9 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         setFastLoadMode,
         soundEnabled,
         setSoundEnabled,
+        theme,
+        setTheme,
+        toggleTheme,
         overallStats,
         lastSavedAt,
         quickAddStudentNote,

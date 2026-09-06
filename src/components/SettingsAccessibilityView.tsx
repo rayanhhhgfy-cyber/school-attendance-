@@ -32,6 +32,9 @@ import {
   ShieldAlert,
   KeyRound,
   Sliders,
+  Sun,
+  Moon,
+  Palette,
 } from 'lucide-react';
 import { speakArabic } from '../utils/audio';
 
@@ -60,6 +63,9 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
     classes,
     timetable,
     students,
+    theme,
+    setTheme,
+    toggleTheme,
   } = useAttendance();
 
   const { isInstallable, isInstalled, install } = usePWAInstall();
@@ -242,15 +248,15 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
   return (
     <div id="view-settings-accessibility" className="space-y-5">
       {/* 1. Header Card */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
         <div>
-          <span className="px-2.5 py-0.5 bg-blue-100 text-blue-900 rounded-full font-bold text-xs">
+          <span className="px-2.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 rounded-full font-bold text-xs">
             تخصيص المنصة والإعدادات
           </span>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
             إعدادات النظام والتطبيق والحساب
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
             إدارة الحساب وتسجيل الخروج، تنبيهات الجداول، تفضيلات الرصد والعرض، والنسخ الاحتياطي.
           </p>
         </div>
@@ -260,9 +266,9 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
             type="button"
             id="btn-settings-logout-quick"
             onClick={logout}
-            className="h-10 px-4 bg-red-50 hover:bg-red-100 active:scale-98 text-red-700 font-bold text-xs sm:text-sm rounded-xl border border-red-200 flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer self-start sm:self-auto"
+            className="h-10 px-4 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 active:scale-98 text-red-700 dark:text-red-300 font-bold text-xs sm:text-sm rounded-xl border border-red-200 dark:border-red-900/60 flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer self-start sm:self-auto"
           >
-            <LogOut className="w-4 h-4 text-red-600" />
+            <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
             <span>تسجيل الخروج</span>
           </button>
         )}
@@ -270,34 +276,34 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
 
       {/* MANAGER FULL CONTROL PANEL IN SETTINGS (Visible to Manager rayyan) */}
       {currentUser?.role === 'manager' && (
-        <div className="space-y-4 bg-purple-50/50 p-4 rounded-3xl border border-purple-200 shadow-xs">
+        <div className="space-y-4 bg-purple-50/50 dark:bg-purple-950/20 p-4 rounded-3xl border border-purple-200 dark:border-purple-900/40 shadow-xs">
           <div className="flex items-center gap-2 px-3 py-1 bg-purple-900 text-white rounded-xl text-xs font-bold w-fit">
             <ShieldAlert className="w-4 h-4 text-amber-300" />
             <span>لوحة التحكم الكاملة لمدير المدرسة (أ. ريان)</span>
           </div>
 
           {/* System Feature Toggles for Manager */}
-          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-3">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-3">
             <div>
-              <span className="px-2.5 py-0.5 bg-blue-100 text-blue-900 rounded-full font-bold text-xs">
+              <span className="px-2.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 rounded-full font-bold text-xs">
                 التحكم بالنظام
               </span>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-1">
                 مفاتيح التشغيل والإيقاف للخصائص
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
                 تفعيل أو إيقاف آليات التنبيه والتحضير التلقائي بضغطة واحدة.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Toggle 1: SMS Alerts */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+              <div className="p-3 bg-slate-50 dark:bg-neutral-950 rounded-xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                     رسائل وتنبيهات الغياب لأولياء الأمور
                   </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     إرسال رسالة فورية لولي أمر الطالب الغائب فور اعتماد كشف الحصة.
                   </p>
                 </div>
@@ -313,7 +319,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                       <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                     </div>
                   ) : (
-                    <div className="w-12 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                    <div className="w-12 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                       <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                     </div>
                   )}
@@ -321,12 +327,12 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
               </div>
 
               {/* Toggle 2: Pause Alerts on Holidays */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+              <div className="p-3 bg-slate-50 dark:bg-neutral-950 rounded-xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                     إيقاف التنبيهات في العطلات ونهاية الأسبوع
                   </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     كتم كافة الإشعارات يومي الجمعة والسبت والإجازات الرسمية.
                   </p>
                 </div>
@@ -342,7 +348,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                       <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                     </div>
                   ) : (
-                    <div className="w-12 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                    <div className="w-12 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                       <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                     </div>
                   )}
@@ -357,13 +363,13 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
       )}
 
       {/* 2. Account & Log Out Card (Mandated User Feature) */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-blue-900" />
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-4 transition-colors">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-neutral-800 pb-3">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-blue-900 dark:text-blue-400" />
             <span>الحساب الحالي وإدارة الجلسة</span>
           </h3>
-          <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs rounded-full font-bold">
+          <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs rounded-full font-bold">
             جلسة نشطة
           </span>
         </div>
@@ -371,28 +377,28 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
         {currentUser ? (
           <div className="space-y-4">
             {/* User Details Banner */}
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-4 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-blue-900 text-white flex items-center justify-center font-black text-lg shadow-xs flex-shrink-0">
                   {currentUser.name.charAt(0)}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="text-base font-black text-slate-900">{currentUser.name}</h4>
+                    <h4 className="text-base font-black text-slate-900 dark:text-white">{currentUser.name}</h4>
                     <span
                       className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
                         currentUser.role === 'manager'
-                          ? 'bg-amber-100 text-amber-900'
-                          : 'bg-blue-100 text-blue-900'
+                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300'
+                          : 'bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300'
                       }`}
                     >
                       {currentUser.role === 'manager' ? 'مدير المدرسة' : 'معلم معتمد'}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-3">
-                    <span>اسم المستخدم: <strong className="font-mono text-slate-700">{currentUser.username}</strong></span>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-3">
+                    <span>اسم المستخدم: <strong className="font-mono text-slate-700 dark:text-slate-200">{currentUser.username}</strong></span>
                     {currentUser.subject && (
-                      <span>المادة: <strong className="text-slate-700">{currentUser.subject}</strong></span>
+                      <span>المادة: <strong className="text-slate-700 dark:text-slate-200">{currentUser.subject}</strong></span>
                     )}
                   </p>
                 </div>
@@ -404,7 +410,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   <button
                     type="button"
                     onClick={onOpenLoginModal}
-                    className="h-10 px-3.5 bg-slate-200 hover:bg-slate-300 active:scale-98 text-slate-800 font-bold text-xs rounded-xl transition cursor-pointer"
+                    className="h-10 px-3.5 bg-slate-200 dark:bg-neutral-800 hover:bg-slate-300 dark:hover:bg-neutral-700 active:scale-98 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition cursor-pointer"
                   >
                     تبديل الحساب
                   </button>
@@ -423,7 +429,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
 
             {/* Switch to Another User Account (One-click) */}
             <div className="pt-2">
-              <label className="block text-xs font-bold text-slate-500 mb-2">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">
                 التبديل السريع بين حسابات الكادر المدرسي:
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -434,18 +440,18 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                     onClick={() => switchUser(u.id)}
                     className={`p-2.5 rounded-xl border text-right transition cursor-pointer flex items-center justify-between ${
                       currentUser.id === u.id
-                        ? 'bg-blue-50 border-blue-400 text-blue-950 font-bold shadow-2xs'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                        ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-400 dark:border-blue-600 text-blue-950 dark:text-blue-200 font-bold shadow-2xs'
+                        : 'bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-slate-300'
                     }`}
                   >
                     <div>
                       <div className="text-xs font-bold">{u.name}</div>
-                      <div className="text-[10px] text-slate-500">
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
                         {u.role === 'manager' ? 'مدير' : u.subject || 'معلم'}
                       </div>
                     </div>
                     {currentUser.id === u.id && (
-                      <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                     )}
                   </button>
                 ))}
@@ -453,7 +459,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
             </div>
           </div>
         ) : (
-          <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 text-xs">
+          <div className="p-4 bg-amber-50 dark:bg-amber-950/50 rounded-2xl border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs">
             لا توجد جلسة مستخدم نشطة حالياً. يرجى تسجيل الدخول للوصول إلى كافة الصلاحيات.
           </div>
         )}
@@ -461,14 +467,14 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
 
       {/* 3. Teacher Personal Profile & Contact Information */}
       {currentUser && (
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-blue-900" />
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-4 transition-colors">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-neutral-800 pb-3">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-900 dark:text-blue-400" />
               <span>الملف الشخصي والبيانات المهنية للمعلم</span>
             </h3>
             {profileSaved && (
-              <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs rounded-full font-bold flex items-center gap-1 animate-pulse">
+              <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs rounded-full font-bold flex items-center gap-1 animate-pulse">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>تم حفظ التعديلات بنجاح</span>
               </span>
@@ -478,19 +484,19 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
           <form onSubmit={handleSaveProfile} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   الاسم الكامل:
                 </label>
                 <input
                   type="text"
                   value={profileName}
                   onChange={e => setProfileName(e.target.value)}
-                  className="w-full h-10 px-3 bg-slate-50 font-bold text-slate-900 rounded-xl border border-slate-300 text-xs focus:bg-white"
+                  className="w-full h-10 px-3 bg-slate-50 dark:bg-neutral-950 font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-neutral-700 text-xs focus:bg-white dark:focus:bg-neutral-900"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   المادة الأساسية المسندة:
                 </label>
                 <input
@@ -498,12 +504,12 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   value={profileSubject}
                   onChange={e => setProfileSubject(e.target.value)}
                   placeholder="مثال: الرياضيات"
-                  className="w-full h-10 px-3 bg-slate-50 font-bold text-slate-900 rounded-xl border border-slate-300 text-xs focus:bg-white"
+                  className="w-full h-10 px-3 bg-slate-50 dark:bg-neutral-950 font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-neutral-700 text-xs focus:bg-white dark:focus:bg-neutral-900"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   رقم الهاتف / التواصل:
                 </label>
                 <input
@@ -511,7 +517,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   value={profilePhone}
                   onChange={e => setProfilePhone(e.target.value)}
                   placeholder="05xxxxxxxx"
-                  className="w-full h-10 px-3 bg-slate-50 font-semibold text-slate-900 rounded-xl border border-slate-300 text-xs focus:bg-white"
+                  className="w-full h-10 px-3 bg-slate-50 dark:bg-neutral-950 font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-neutral-700 text-xs focus:bg-white dark:focus:bg-neutral-900"
                 />
               </div>
             </div>
@@ -529,16 +535,16 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
       )}
 
       {/* 4. Smart Notifications & Period Reminders Configuration */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Bell className="w-5 h-5 text-amber-600" />
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-4 transition-colors">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-neutral-800 pb-3">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Bell className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             <span>إعدادات الإشعارات والتنبيهات المدرسية الذكية</span>
           </h3>
           <button
             type="button"
             onClick={handleTestNotification}
-            className="h-8 px-3 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1"
+            className="h-8 px-3 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-300 font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>إرسال إشعار تجريبي</span>
@@ -547,12 +553,12 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Notification 1: 5 Min Before Period */}
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 تنبيه قبل بداية الحصة (5 دقائق)
               </h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 إشعار المعلم برقم الحصة والقاعة قبل انطلاقها.
               </p>
             </div>
@@ -566,7 +572,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               ) : (
-                <div className="w-11 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               )}
@@ -574,12 +580,12 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
           </div>
 
           {/* Notification 2: 10 Min Delayed Attendance */}
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 تنبيه تأخر رصد الغياب (بعد 10 دقائق)
               </h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 تذكير تلقائي في حال عدم اعتماد كشف الفصل بعد بدء الحصة.
               </p>
             </div>
@@ -593,7 +599,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               ) : (
-                <div className="w-11 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               )}
@@ -601,12 +607,12 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
           </div>
 
           {/* Notification 3: Consecutive Absence Warning */}
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 تنبيه الغياب المتكرر للطلاب
               </h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 تنبيه فوري للمرشد والمعلم عند غياب الطالب 3 أيام فأكثر.
               </p>
             </div>
@@ -620,7 +626,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               ) : (
-                <div className="w-11 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               )}
@@ -630,20 +636,126 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
       </div>
 
       {/* 5. Display & Visual Ergonomics */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-        <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-          <Eye className="w-5 h-5 text-indigo-700" />
-          <span>تخصيص العرض والراحة البصرية بالفصول</span>
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-5 transition-colors">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-neutral-800 pb-3">
+          <Palette className="w-5 h-5 text-indigo-700 dark:text-indigo-400" />
+          <span>تخصيص المظهر ونمط الألوان (Dark & Light Theme)</span>
         </h3>
+
+        {/* Theme Switcher Cards (#000000 vs #FFFFFF) */}
+        <div className="p-4 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                {theme === 'dark' ? (
+                  <Moon className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Sun className="w-4 h-4 text-amber-500" />
+                )}
+                <span>نمط العرض الحالي: {theme === 'dark' ? 'الوضع الداكن الأسود (#000000)' : 'الوضع الفاتح الأبيض (#FFFFFF)'}</span>
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                يمكنك التبديل الفوري بين المظهر الأبيض النقي (#FFFFFF) والمظهر الليلي الداكن العميق (#000000) لحماية العين وتوفير الطاقة.
+              </p>
+            </div>
+
+            <button
+              id="settings-theme-quick-toggle"
+              type="button"
+              onClick={toggleTheme}
+              className="px-4 py-2 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-2 self-start sm:self-auto bg-white dark:bg-neutral-800 hover:bg-slate-100 dark:hover:bg-neutral-700 text-slate-900 dark:text-white border-slate-300 dark:border-neutral-700 shadow-2xs"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-500" />
+                  <span>التحويل للفاتح (#FFFFFF)</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-slate-800 dark:text-slate-200" />
+                  <span>التحويل للداكن (#000000)</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            {/* Light Theme Selection Card */}
+            <button
+              type="button"
+              id="btn-select-theme-light"
+              onClick={() => setTheme('light')}
+              className={`p-4 rounded-2xl border-2 text-right transition cursor-pointer relative flex flex-col justify-between h-32 ${
+                theme === 'light'
+                  ? 'border-blue-600 bg-white shadow-md ring-2 ring-blue-100'
+                  : 'border-slate-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900 hover:border-slate-300 dark:hover:border-neutral-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+                    <Sun className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-sm text-slate-900 dark:text-white block">الوضع الفاتح</span>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">كود اللون: #FFFFFF</span>
+                  </div>
+                </div>
+                {theme === 'light' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">
+                    مفعّل الآن
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-neutral-800 text-[11px] text-slate-500 dark:text-slate-400">
+                <span className="w-4 h-4 rounded-full bg-[#FFFFFF] border border-slate-300 shadow-2xs" />
+                <span>أرضية بيضاء ناصعة وخطوط واضحة للاستخدام الصباحي</span>
+              </div>
+            </button>
+
+            {/* Dark Theme Selection Card */}
+            <button
+              type="button"
+              id="btn-select-theme-dark"
+              onClick={() => setTheme('dark')}
+              className={`p-4 rounded-2xl border-2 text-right transition cursor-pointer relative flex flex-col justify-between h-32 ${
+                theme === 'dark'
+                  ? 'border-indigo-500 bg-[#0d0d0d] text-white shadow-md ring-2 ring-indigo-950'
+                  : 'border-slate-300 dark:border-neutral-800 bg-[#121212] text-slate-200 hover:border-slate-400 dark:hover:border-neutral-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-neutral-800 text-amber-400 flex items-center justify-center border border-neutral-700">
+                    <Moon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-sm text-white block">الوضع الداكن</span>
+                    <span className="text-[11px] font-mono text-slate-400">كود اللون: #000000</span>
+                  </div>
+                </div>
+                {theme === 'dark' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">
+                    مفعّل الآن
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-neutral-800 text-[11px] text-slate-400">
+                <span className="w-4 h-4 rounded-full bg-[#000000] border border-neutral-700 shadow-2xs" />
+                <span>أرضية سوداء نقية لتقليل إجهاد العين وتوفير شحن البطارية</span>
+              </div>
+            </button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Option: Auto Mark Present */}
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 افتراض حضور جميع الطلاب
               </h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 تحديد الكل «حاضر» افتراضياً عند فتح الفصل، لترصد الاستثناء فقط.
               </p>
             </div>
@@ -657,7 +769,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               ) : (
-                <div className="w-11 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               )}
@@ -665,12 +777,12 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
           </div>
 
           {/* Option: Compact Mode */}
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 النمط المكثف المضغوط
               </h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 تصغير المسافات لعرض أكبر عدد من الطلاب بدون الحاجة للتمرير.
               </p>
             </div>
@@ -684,7 +796,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               ) : (
-                <div className="w-11 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               )}
@@ -692,12 +804,12 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
           </div>
 
           {/* Option: Large Font */}
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 تكبير الخط بالقوائم
               </h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 تسهيل القراءة السريعة أثناء الوقوف أمام مقاعد الطلاب في الصف.
               </p>
             </div>
@@ -711,7 +823,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               ) : (
-                <div className="w-11 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               )}
@@ -721,17 +833,17 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
       </div>
 
       {/* 6. Auditory & TTS Assistance Card */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-        <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-          <Volume2 className="w-5 h-5 text-emerald-700" />
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-4 transition-colors">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-neutral-800 pb-3">
+          <Volume2 className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
           <span>المساعد الصوتي والتأثيرات السمعية</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900">تشغيل نغمات التأكيد عند اللمس</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">تشغيل نغمات التأكيد عند اللمس</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 إصدار نغمة خفيفة ومريحة عند رصد الطالب لتأكيد العملية بنجاح.
               </p>
             </div>
@@ -746,17 +858,17 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               ) : (
-                <div className="w-11 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                   <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
                 </div>
               )}
             </button>
           </div>
 
-          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900">تجربة المساعد الصوتي باللغة العربية</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">تجربة المساعد الصوتي باللغة العربية</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 قراءة أسماء الحضور وملخص الفصل صوتياً بنطق عربي واضح.
               </p>
             </div>
@@ -773,18 +885,18 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
       </div>
 
       {/* 7. Fast-Load Mode (Weak Connectivity) */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-        <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-4 transition-colors">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-neutral-800 pb-3">
           <Zap className="w-5 h-5 text-amber-500" />
           <span>نمط التحميل السريع للفصول ضعيفة التغطية</span>
         </h3>
 
-        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+            <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
               تفعيل نمط خفيف فوري (Fast-Load Mode)
             </h4>
-            <p className="text-[11px] text-slate-500 mt-1 max-w-xl">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
               مثالي للقاعات الدراسية والمعامل المعزولة ذات التغطية الضعيفة. يقوم بتعطيل الحركات التجميلية الثقيلة لتقليل استهلاك البيانات وتسريع الاستجابة للحد الأقصى.
             </p>
           </div>
@@ -798,7 +910,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                 <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
               </div>
             ) : (
-              <div className="w-11 h-6 bg-slate-300 rounded-full p-0.5 flex items-center justify-start transition">
+              <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
                 <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
               </div>
             )}
@@ -807,21 +919,21 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
       </div>
 
       {/* 8. Local Storage, Backup & PWA */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-        <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-          <HardDrive className="w-5 h-5 text-blue-800" />
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-4 transition-colors">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-neutral-800 pb-3">
+          <HardDrive className="w-5 h-5 text-blue-800 dark:text-blue-400" />
           <span>النسخ الاحتياطي، التخزين، وتثبيت التطبيق</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
           {/* Backup Download Button */}
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col justify-between gap-3">
+          <div className="p-4 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex flex-col justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <Download className="w-4 h-4 text-emerald-600" />
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>تصدير نسخة احتياطية (JSON)</span>
               </h4>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 تنزيل ملف يحتوي على كافة بيانات الطلاب والجدول وسجلات الحضور.
               </p>
             </div>
@@ -836,13 +948,13 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
           </div>
 
           {/* PWA App Install */}
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col justify-between gap-3">
+          <div className="p-4 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex flex-col justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <Smartphone className="w-4 h-4 text-blue-600" />
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Smartphone className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <span>تثبيت التطبيق على الجهاز</span>
               </h4>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 تشغيل المنصة كتطبيق مثبت يعمل بدون متصفح مع دعم كامل بدون إنترنت.
               </p>
             </div>
@@ -856,11 +968,11 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                 <span>تثبيت كـ تطبيق الآن</span>
               </button>
             ) : isInstalled ? (
-              <span className="text-xs font-bold text-emerald-700 text-center py-2">
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 text-center py-2">
                 ✓ التطبيق مثبت على جهازك بالفعل
               </span>
             ) : (
-              <span className="text-xs text-slate-500 text-center py-2 font-medium">
+              <span className="text-xs text-slate-500 dark:text-slate-400 text-center py-2 font-medium">
                 جاهز للعمل المباشر
               </span>
             )}
@@ -868,20 +980,20 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
 
 
         {/* Reset Storage */}
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col justify-between gap-3">
+          <div className="p-4 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex flex-col justify-between gap-3">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-red-900 flex items-center gap-1.5">
-                <RefreshCw className="w-4 h-4 text-red-600" />
+              <h4 className="text-xs sm:text-sm font-bold text-red-900 dark:text-red-300 flex items-center gap-1.5">
+                <RefreshCw className="w-4 h-4 text-red-600 dark:text-red-400" />
                 <span>إعادة ضبط البيانات المحلية</span>
               </h4>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 مسح الذاكرة المؤقتة وإعادة تحميل البيانات الافتراضية للمدرسة.
               </p>
             </div>
             <button
               type="button"
               onClick={handleResetStorage}
-              className="w-full h-9 px-3 bg-red-50 hover:bg-red-100 text-red-700 font-bold rounded-xl text-xs border border-red-200 transition cursor-pointer flex items-center justify-center gap-1.5"
+              className="w-full h-9 px-3 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 font-bold rounded-xl text-xs border border-red-200 dark:border-red-900/60 transition cursor-pointer flex items-center justify-center gap-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>إعادة الضبط الافتراضي</span>
@@ -889,8 +1001,8 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
           </div>
         </div>
 
-        <div className="text-[11px] text-slate-400 pt-2 text-center">
-          آخر مزامنة وحفظ محلي: <span className="font-mono text-slate-600">{lastSavedAt}</span>
+        <div className="text-[11px] text-slate-400 dark:text-slate-500 pt-2 text-center">
+          آخر مزامنة وحفظ محلي: <span className="font-mono text-slate-600 dark:text-slate-300">{lastSavedAt}</span>
         </div>
       </div>
 

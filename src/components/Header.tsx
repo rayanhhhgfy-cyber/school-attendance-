@@ -25,6 +25,8 @@ import {
   UserCheck,
   LogOut,
   LogIn,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -52,13 +54,15 @@ export const Header: React.FC<HeaderProps> = ({
     triggerTestAlert,
     currentUser,
     logout,
+    theme,
+    toggleTheme,
   } = useAttendance();
 
   const isOnline = useOnlineStatus();
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-xs">
+    <header className="sticky top-0 z-40 bg-white dark:bg-[#000000] border-b border-slate-200 dark:border-neutral-800 shadow-xs transition-colors duration-200">
       {/* Emergency Lockdown Alert Bar */}
       {settings.emergencyLockdown && (
         <div
@@ -125,6 +129,22 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="absolute -top-1 -right-1 bg-red-600 text-white font-bold text-[10px] min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-0.5 border border-white">
                 {unreadCount}
               </span>
+            )}
+          </button>
+
+          {/* Theme Toggle (Dark #000000 / Light #FFFFFF) */}
+          <button
+            id="btn-mobile-theme-toggle"
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'التحويل للوضع الفاتح' : 'التحويل للوضع الداكن'}
+            title={theme === 'dark' ? 'التحويل للوضع الفاتح (#FFFFFF)' : 'التحويل للوضع الداكن (#000000)'}
+            className="h-9 w-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 flex items-center justify-center transition cursor-pointer"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-700" />
             )}
           </button>
 
@@ -242,9 +262,9 @@ export const Header: React.FC<HeaderProps> = ({
             id="btn-simulate-alert"
             onClick={() => triggerTestAlert()}
             title="تجربة تنبيه الحصة الذكي"
-            className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-semibold text-xs transition cursor-pointer"
+            className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900 font-semibold text-xs transition cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             <span>تجربة تنبيه</span>
           </button>
 
@@ -253,30 +273,52 @@ export const Header: React.FC<HeaderProps> = ({
             id="btn-notifications"
             onClick={onOpenNotifications}
             aria-label="التنبيهات المدرسية"
-            className="relative h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 flex items-center justify-center transition cursor-pointer"
+            className="relative h-8 w-8 rounded-lg bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-neutral-700 flex items-center justify-center transition cursor-pointer"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-600 text-white font-bold text-[10px] min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-0.5 border border-white animate-bounce">
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white font-bold text-[10px] min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-0.5 border border-white dark:border-neutral-900 animate-bounce">
                 {unreadCount}
               </span>
             )}
           </button>
 
+          {/* Theme Toggle Button (Light #FFFFFF / Dark #000000) */}
+          <button
+            id="btn-desktop-theme-toggle"
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'التحويل للوضع الفاتح (#FFFFFF)' : 'التحويل للوضع الداكن (#000000)'}
+            title={theme === 'dark' ? 'التحويل للوضع الفاتح (#FFFFFF)' : 'التحويل للوضع الداكن (#000000)'}
+            className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-neutral-700 text-xs font-semibold transition cursor-pointer"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[11px]">الوضع الفاتح</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                <span className="text-[11px]">الوضع الداكن</span>
+              </>
+            )}
+          </button>
+
           {/* User Account Controls */}
           {currentUser ? (
-            <div className="flex items-center gap-1.5 pl-1 border-r border-slate-200 pr-2">
+            <div className="flex items-center gap-1.5 pl-1 border-r border-slate-200 dark:border-neutral-800 pr-2">
               <div
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold ${
                   currentUser.role === 'manager'
-                    ? 'bg-purple-50 text-purple-900 border-purple-300'
-                    : 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 border-purple-300 dark:border-purple-800'
+                    : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border-emerald-300 dark:border-emerald-800'
                 }`}
               >
                 {currentUser.role === 'manager' ? (
-                  <ShieldCheck className="w-3.5 h-3.5 text-purple-700" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-700 dark:text-purple-400" />
                 ) : (
-                  <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                 )}
                 <span>{currentUser.name}</span>
                 <span className="text-[10px] opacity-75 font-normal">
@@ -289,7 +331,7 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenLoginModal}
                 title="تبديل الحساب الحالي"
-                className="h-8 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                className="h-8 px-2.5 rounded-lg bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-neutral-700 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
               >
                 <span>تبديل</span>
               </button>
@@ -299,7 +341,7 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={logout}
                 title="تسجيل الخروج"
-                className="h-8 w-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 flex items-center justify-center transition cursor-pointer"
+                className="h-8 w-8 rounded-lg bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900 flex items-center justify-center transition cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
