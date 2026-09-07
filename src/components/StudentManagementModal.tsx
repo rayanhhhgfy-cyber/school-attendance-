@@ -113,7 +113,7 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
   const extractNamesFromContent = (text: string): string[] => {
     const EXCLUDE_HEADER_KEYWORDS = [
       'اسم الطالب', 'أسماء الطلاب', 'الاسم الثلاثي', 'الاسم الرباعي',
-      'رقم الهوية', 'رقم الجلوس', 'رقم المقعد', 'الفصل', 'الصف',
+      'الوطني', 'رقم الوطني', 'رقم الجلوس', 'رقم المقعد', 'الفصل', 'الصف',
       'ملاحظات', 'حاضر', 'غائب', 'متأخر', 'تاريخ', 'كشف الحضور',
       'اسم', 'الاسم', 'المدرسة', 'جدول', 'م', 'ت', 'السجل المدني',
       'name', 'student name', 'id', 'seat', 'class', 'status', 'notes',

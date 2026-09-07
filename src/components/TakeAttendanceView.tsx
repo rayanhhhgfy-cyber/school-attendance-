@@ -226,7 +226,7 @@ export const TakeAttendanceView: React.FC = () => {
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                     <span>
                       معتمد ومحفوظ ({currentSessionMeta?.submittedAt || ''})
-                      {currentSessionMeta?.submittedTeacherName ? ` • ${currentSessionMeta.submittedTeacherName}` : ''}
+                      {currentSessionMeta?.submittedTeacherName ? ` • المعلم المسؤول: ${currentSessionMeta.submittedTeacherName}` : (currentPeriodSlot?.teacherName ? ` • المعلم المسؤول: ${currentPeriodSlot.teacherName}` : '')}
                     </span>
                   </span>
                   {(currentUser?.role === 'manager' || authCheck.allowed) && (
@@ -427,6 +427,25 @@ export const TakeAttendanceView: React.FC = () => {
           </div>
         </div>
 
+        {/* Teacher Active Reminder Notification Banner */}
+        {currentUser?.role === 'teacher' && teacherScheduledSlotInThisClass && !isCurrentSessionSubmitted && (
+          <div className="mt-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 flex flex-wrap items-center justify-between gap-2 animate-pulse">
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-950 dark:text-amber-200">
+              <span className="text-base">⏰</span>
+              <span>
+                تذكير هام للمعلم ({currentUser.name}): لديك حصة مجدولة الآن في هذا الفصل ({teacherScheduledSlotInThisClass.subject} - الحصة {teacherScheduledSlotInThisClass.periodNumber}). يرجى رصد الحضور والغياب واعتماد الكشف.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedPeriod(teacherScheduledSlotInThisClass.periodNumber)}
+              className="h-8 px-3.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 shadow-xs"
+            >
+              <span>رصد الحضور لحصتي الآن</span>
+            </button>
+          </div>
+        )}
+
         {/* Notice for Teacher if viewing another period */}
         {isViewingDifferentPeriodThanAssigned && teacherScheduledSlotInThisClass && (
           <div className="mt-2.5 p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex flex-wrap items-center justify-between gap-2">
@@ -482,10 +501,7 @@ export const TakeAttendanceView: React.FC = () => {
         {/* Guidance Tip */}
         <div className="mt-3 p-2.5 bg-blue-50/70 dark:bg-[#0c1a2e] rounded-xl border border-blue-200 dark:border-blue-900/60 text-blue-900 dark:text-blue-200 text-xs sm:text-sm flex items-center justify-between gap-2 transition-colors">
           <div className="flex items-center gap-2">
-            <span>💡</span>
-            <span>
-              <strong>الرصد الذكي بالاستثناء:</strong> جميع الطلاب مسجلون كـ "حاضر" تلقائياً. اضغط فقط على اسم الطالب الغائب لتغيير حالته.
-            </span>
+            <span className="font-semibold">ملخص كشف الحضور للحصة الحالية</span>
           </div>
           <button
             type="button"

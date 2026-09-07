@@ -63,7 +63,7 @@ export const ManagerControlCenter: React.FC = () => {
     requestNotificationPermission,
   } = useAttendance();
 
-  const [activeSection, setActiveSection] = useState<'users' | 'substitutes' | 'timings' | 'classes_students' | 'manager_controls'>('users');
+  const [activeSection, setActiveSection] = useState<'users' | 'schedules' | 'substitutes' | 'timings' | 'classes_students' | 'manager_controls'>('users');
 
   // Substitute Management Filter & Modal State
   const [subFilterDay, setSubFilterDay] = useState<string>('all');
@@ -230,6 +230,19 @@ export const ManagerControlCenter: React.FC = () => {
 
           <button
             type="button"
+            onClick={() => setActiveSection('schedules')}
+            className={`px-3 py-2 rounded-lg font-bold text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer ${
+              activeSection === 'schedules'
+                ? 'bg-purple-900 text-white shadow-xs'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-800'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 text-blue-400" />
+            <span>جدول المعلمين والحصص</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveSection('substitutes')}
             className={`px-3 py-2 rounded-lg font-bold text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer ${
               activeSection === 'substitutes'
@@ -374,16 +387,68 @@ export const ManagerControlCenter: React.FC = () => {
               </span>
             </div>
 
-            {/* Browser Push Master Toggle */}
+            {/* Browser Push Master Toggle & Custom Broadcast Composer */}
             <div className="p-5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 space-y-3 flex flex-col justify-between">
               <div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Bell className="w-4 h-4 text-emerald-600" />
-                  <span>تفعيل نظام التنبيهات المنبثقة للكمبيوتر والجوال</span>
+                  <span>تفعيل بث الإشعارات المنبثقة للنظام (System Push Notifications)</span>
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  إرسال إشعارات منبثقة مباشرة للمستخدم عند قرع جرس بداية الحصة أو حالات الغياب المتكرر.
+                  إرسال إشعارات منبثقة مباشرة لكافة الأجهزة والمعلمين بالمدرسة.
                 </p>
+              </div>
+
+              {/* Broadcast Composer */}
+              <div className="pt-2 border-t border-slate-200 dark:border-neutral-800 space-y-2">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                  📢 إرسال إشعار عام من المدير لكافة المعلمين والمنظومة:
+                </span>
+                <input
+                  type="text"
+                  id="push-broadcast-title"
+                  placeholder="عنوان الإشعار (مثال: تذكير برصد الحصة الثالثة)"
+                  className="w-full h-9 px-3 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white"
+                />
+                <textarea
+                  id="push-broadcast-body"
+                  rows={2}
+                  placeholder="نص الرسالة التي ستصل كإشعار منبثق على شاشات الجوال والكمبيوتر..."
+                  className="w-full p-2.5 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const titleEl = document.getElementById('push-broadcast-title') as HTMLInputElement;
+                    const bodyEl = document.getElementById('push-broadcast-body') as HTMLTextAreaElement;
+                    const title = titleEl?.value.trim() || 'تنبيه من إدارة المدرسة';
+                    const body = bodyEl?.value.trim() || 'يرجى مراجعة كشوفات الحضور ورصد الحصص الحالية.';
+
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                      new Notification(title, {
+                        body,
+                        icon: '/icon.svg',
+                        dir: 'rtl',
+                      });
+                      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({
+                          type: 'SHOW_NOTIFICATION',
+                          title,
+                          body,
+                        });
+                      }
+                      alert('تم إرسال الإشعار بنجاح لجميع المتواجدين على النظام!');
+                      if (titleEl) titleEl.value = '';
+                      if (bodyEl) bodyEl.value = '';
+                    } else {
+                      requestNotificationPermission();
+                    }
+                  }}
+                  className="w-full h-9 bg-purple-900 hover:bg-purple-800 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <Bell className="w-3.5 h-3.5 text-amber-300" />
+                  <span>بث الإشعار المنبثق الآن</span>
+                </button>
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-neutral-800">
@@ -392,7 +457,7 @@ export const ManagerControlCenter: React.FC = () => {
                   onClick={requestNotificationPermission}
                   className="h-9 px-3.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition cursor-pointer"
                 >
-                  طلب إذن الإشعارات الآن
+                  تفعيل إذن الإشعارات بالمتصفح
                 </button>
 
                 <button
@@ -412,6 +477,112 @@ export const ManagerControlCenter: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION: TEACHERS SCHEDULES & CLASS ASSIGNMENTS */}
+      {activeSection === 'schedules' && (
+        <div className="space-y-4">
+          <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-extrabold text-blue-950 dark:text-blue-200 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <span>جدول حصص المعلمين والفصول المسندة لكل معلم</span>
+              </h3>
+              <p className="text-xs text-blue-800 dark:text-blue-300 mt-0.5">
+                معاينة شاملة لكافة معلمي المدرسة، الفصول المعتمدة لكل معلم، وجدول حصصهم اليومي والأسبوعي.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {users
+              .filter(u => u.role === 'teacher')
+              .map(teacher => {
+                const teacherSlots = timetable.filter(
+                  s =>
+                    s.teacherId === teacher.teacherId ||
+                    s.teacherId === teacher.id ||
+                    (s.teacherName && (s.teacherName === teacher.name || teacher.name.includes(s.teacherName)))
+                );
+
+                return (
+                  <div
+                    key={teacher.id}
+                    className="p-4 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 space-y-3"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                          <GraduationCap className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                            {teacher.name}
+                          </h4>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            مادة {teacher.subject || 'عام'} • هاتف: <span className="font-mono">{teacher.phone || '—'}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 ml-1">الفصول المسندة:</span>
+                        {teacher.assignedClasses && teacher.assignedClasses.length > 0 ? (
+                          teacher.assignedClasses.map(cid => {
+                            const c = classes.find(x => x.id === cid);
+                            return (
+                              <span
+                                key={cid}
+                                className="px-2 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 rounded-md text-xs font-bold"
+                              >
+                                {c?.name || cid}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-xs text-slate-400">لم يتم إسناد فصول</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Schedule slots table for this teacher */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 pt-1">
+                      {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'].map(day => {
+                        const daySlots = teacherSlots.filter(s => s.day === day);
+                        return (
+                          <div
+                            key={day}
+                            className="p-2.5 bg-white dark:bg-neutral-900 rounded-xl border border-slate-200 dark:border-neutral-800 text-xs space-y-1.5"
+                          >
+                            <span className="font-bold text-slate-800 dark:text-slate-200 block border-b border-slate-100 dark:border-neutral-800 pb-1">
+                              {day}
+                            </span>
+                            {daySlots.length === 0 ? (
+                              <span className="text-[11px] text-slate-400 block italic">لا توجد حصص</span>
+                            ) : (
+                              daySlots.map(slot => (
+                                <div
+                                  key={slot.id}
+                                  className="p-1.5 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900/50 flex items-center justify-between"
+                                >
+                                  <span className="font-bold text-blue-900 dark:text-blue-300">
+                                    الحصة {slot.periodNumber}
+                                  </span>
+                                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                    {slot.className}
+                                  </span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
