@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   CalendarDays,
   SlidersHorizontal,
+  History,
   Volume2,
   VolumeX,
   ShieldAlert,
@@ -61,7 +62,7 @@ export const BurgerMenuDrawer: React.FC<BurgerMenuDrawerProps> = ({
 
   const isOnline = useOnlineStatus();
 
-  const handleNavClick = (tab: 'take_attendance' | 'dashboard' | 'timetable' | 'settings') => {
+  const handleNavClick = (tab: 'take_attendance' | 'dashboard' | 'timetable' | 'history' | 'settings') => {
     setActiveTab(tab);
     onClose();
   };
@@ -72,6 +73,12 @@ export const BurgerMenuDrawer: React.FC<BurgerMenuDrawerProps> = ({
       title: 'تسجيل الحضور',
       desc: 'رصد الحضور السريع بالاستثناء حسب الحصص',
       icon: BookOpenCheck,
+    },
+    {
+      id: 'history' as const,
+      title: 'السجلات والأيام السابقة',
+      desc: 'استعراض حضور الأيام والحصص السابقة ومراجعة الأعذار',
+      icon: History,
     },
     {
       id: 'dashboard' as const,

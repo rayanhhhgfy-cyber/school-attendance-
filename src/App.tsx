@@ -8,6 +8,7 @@ import { AttendanceProvider, useAttendance } from './context/AttendanceContext';
 import { Header } from './components/Header';
 import { BottomNavigation } from './components/BottomNavigation';
 import { TakeAttendanceView } from './components/TakeAttendanceView';
+import { AttendanceHistoryView } from './components/AttendanceHistoryView';
 import { AdminDashboardView } from './components/AdminDashboardView';
 import { TimetableRemindersView } from './components/TimetableRemindersView';
 import { SettingsAccessibilityView } from './components/SettingsAccessibilityView';
@@ -25,7 +26,7 @@ const AppContent: React.FC = () => {
   const [isBurgerOpen, setIsBurgerOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  // If user is not logged in, render the Login Screen as the FIRST PAGE
+  // If user is not logged in, render the previous full landing LoginPage
   if (!currentUser) {
     return <LoginPage />;
   }
@@ -46,6 +47,7 @@ const AppContent: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 md:pb-16">
         {activeTab === 'take_attendance' && <TakeAttendanceView />}
+        {activeTab === 'history' && <AttendanceHistoryView />}
         {activeTab === 'dashboard' && (
           <AdminDashboardView onOpenEmergencyModal={() => setIsEmergencyOpen(true)} />
         )}

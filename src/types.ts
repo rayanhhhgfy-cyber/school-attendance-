@@ -8,7 +8,7 @@ export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 export interface Student {
   id: string;
   name: string;
-  nationalId: string;
+  nationalId?: string;
   seatNumber: number;
   classId: string;
   avatarSeed: string;
@@ -24,7 +24,18 @@ export interface AttendanceEntry {
   studentId: string;
   status: AttendanceStatus;
   note?: string;
+  excuseId?: string;
   updatedAt: string;
+}
+
+export interface MedicalExcuse {
+  id: string;
+  studentId: string;
+  date: string; // YYYY-MM-DD
+  imageUrl: string; // Base64 data URL
+  fileName?: string;
+  uploadedAt: string;
+  uploadedBy?: string;
 }
 
 export interface ClassAttendanceSession {
@@ -103,6 +114,11 @@ export interface SystemSettings {
   lockEditingAfterPeriod: boolean;
   emergencyLockdown: boolean;
   lockdownTime?: string;
+  editingDeadline?: string; // e.g., "14:00"
+  editingDeadlineEnabled?: boolean;
+  schoolName?: string;
+  enablePushNotifications?: boolean;
+  requireExcuseImage?: boolean;
 }
 
 export interface AppNotification {
@@ -116,5 +132,3 @@ export interface AppNotification {
 }
 
 export type AppTheme = 'light' | 'dark';
-
-

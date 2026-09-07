@@ -29,6 +29,9 @@ import {
   Filter,
   Pencil,
   School,
+  History,
+  Lock,
+  Bell,
 } from 'lucide-react';
 import { AssignedClassesSelector } from './AssignedClassesSelector';
 
@@ -54,9 +57,13 @@ export const ManagerControlCenter: React.FC = () => {
     setSelectedClassId,
     setSelectedPeriod,
     setActiveTab,
+    attendanceChangeCount,
+    settings,
+    updateSetting,
+    requestNotificationPermission,
   } = useAttendance();
 
-  const [activeSection, setActiveSection] = useState<'users' | 'substitutes' | 'timings' | 'classes_students'>('users');
+  const [activeSection, setActiveSection] = useState<'users' | 'substitutes' | 'timings' | 'classes_students' | 'manager_controls'>('users');
 
   // Substitute Management Filter & Modal State
   const [subFilterDay, setSubFilterDay] = useState<string>('all');
@@ -96,7 +103,6 @@ export const ManagerControlCenter: React.FC = () => {
     name: '',
     classId: classes[0]?.id || 'class-9th',
     seatNumber: 1,
-    nationalId: '10' + Math.floor(10000000 + Math.random() * 90000000),
     guardianPhone: '05' + Math.floor(10000000 + Math.random() * 90000000),
   });
 
@@ -169,8 +175,7 @@ export const ManagerControlCenter: React.FC = () => {
     updatePeriodTiming(editingTiming.periodNumber, {
       startTime: editingTiming.startTime,
       endTime: editingTiming.endTime,
-      attendanceWindowMinutes: Number(editingTiming.attendanceWindowMinutes),
-      isActive: editingTiming.isActive,
+      windowMinutes: Number(editingTiming.windowMinutes),
     });
     setEditingTiming(null);
   };
@@ -191,12 +196,25 @@ export const ManagerControlCenter: React.FC = () => {
             مركز تحكم مدير المدرسة
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">
-            إدارة حسابات وكلمات مرور المعلمين، ضبط مواعيد الحصص ونوافذ رصد الغياب، والتحكم بالفصول والطلاب.
+            إدارة حسابات المعلمين، ضبط الموعد النهائي لمنع التعديل، وتتبع إجمالي عدد التغييرات على الحضور.
           </p>
         </div>
 
         {/* Section Navigation Tabs */}
-        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-neutral-950 p-1 rounded-xl border border-slate-200 dark:border-neutral-800">
+        <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-neutral-950 p-1 rounded-xl border border-slate-200 dark:border-neutral-800">
+          <button
+            type="button"
+            onClick={() => setActiveSection('manager_controls')}
+            className={`px-3 py-2 rounded-lg font-bold text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer ${
+              activeSection === 'manager_controls'
+                ? 'bg-purple-900 text-white shadow-xs'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-800'
+            }`}
+          >
+            <Lock className="w-4 h-4 text-amber-400" />
+            <span>الموعد النهائي والإعدادات</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveSection('users')}
@@ -250,6 +268,153 @@ export const ManagerControlCenter: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* STATS STRIP: ATTENDANCE CHANGE COUNTER */}
+      <div className="p-4 bg-gradient-to-r from-purple-900 to-indigo-900 text-white rounded-2xl shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
+            <History className="w-6 h-6 text-amber-300" />
+          </div>
+          <div>
+            <span className="text-xs text-purple-200 font-bold block">إحصائية حية لمدير المدرسة</span>
+            <h3 className="text-lg font-black text-white">إجمالي عدد مرات تعديل كشوف الحضور</h3>
+            <p className="text-xs text-purple-100 opacity-90 mt-0.5">
+              يتم احتساب كل تعديل أو إعادة فتح لكشوفات الحضور لضمان الشفافية.
+            </p>
+          </div>
+        </div>
+
+        <div className="px-5 py-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-center font-mono shrink-0">
+          <span className="text-2xl sm:text-3xl font-black text-amber-300 block leading-none">
+            {attendanceChangeCount}
+          </span>
+          <span className="text-[11px] font-sans font-bold text-white mt-1 block">تعديلات مسجلة</span>
+        </div>
+      </div>
+
+      {/* SECTION: MANAGER DEADLINE & ADVANCED CONTROLS */}
+      {activeSection === 'manager_controls' && (
+        <div className="space-y-4">
+          {/* Deadline Cutoff Configuration */}
+          <div className="p-5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 space-y-4">
+            <div className="flex items-start justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <span>تحديد موعد نهائي يومي لمنع التعديل على الحضور (Cutoff Deadline)</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                  عند تفعيل هذه الخاصية وتجاوز الوقت المحدد، يُقفل النظام تلقائياً ولا يُسمح للمعلمين بإجراء أي تعديلات جديدة على الكشوفات.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => updateSetting('editingDeadlineEnabled', !settings.editingDeadlineEnabled)}
+                className="p-1 rounded-xl cursor-pointer shrink-0"
+              >
+                {settings.editingDeadlineEnabled ? (
+                  <div className="w-12 h-6 bg-emerald-600 rounded-full p-0.5 flex items-center justify-end transition">
+                    <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
+                  </div>
+                ) : (
+                  <div className="w-12 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
+                    <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
+                  </div>
+                )}
+              </button>
+            </div>
+
+            {settings.editingDeadlineEnabled && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    ساعة الموعد النهائي للإقفال (مثال 14:00 للثانية ظهراً):
+                  </label>
+                  <input
+                    type="time"
+                    value={settings.editingDeadline || '14:00'}
+                    onChange={e => updateSetting('editingDeadline', e.target.value)}
+                    className="w-full h-11 px-3 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white font-mono"
+                  />
+                  <span className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 block font-semibold">
+                    ⚠️ الموعد المحدد حالياً: {settings.editingDeadline || '14:00'}. بعد هذا الوقت يُمنع المعلمون من تعديل الحضور.
+                  </span>
+                </div>
+
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-900/60 text-xs text-blue-950 dark:text-blue-200 flex flex-col justify-center space-y-1">
+                  <span className="font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-4 h-4 text-blue-600" />
+                    <span>صلاحيات الاستثناء للمدير:</span>
+                  </span>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    حتى بعد قفل الموعد النهائي، يمتلك مدير المدرسة فقط الصلاحية الدائمة لفتح وتعديل أي كشف غياب في أي وقت.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* School Name Config & Push Notifications Master */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* School Name */}
+            <div className="p-5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 space-y-3">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <School className="w-4 h-4 text-blue-600" />
+                <span>اسم المدرسة المعتمد للتقارير والختم</span>
+              </h4>
+              <input
+                type="text"
+                value={settings.schoolName || 'مدرسة الملك حسين بن طلال الثانوية للبنين'}
+                onChange={e => updateSetting('schoolName', e.target.value)}
+                className="w-full h-11 px-3.5 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white"
+              />
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+                يظهر هذا الاسم على كشوفات الطباعة وتصديرات Excel للوزارة.
+              </span>
+            </div>
+
+            {/* Browser Push Master Toggle */}
+            <div className="p-5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 space-y-3 flex flex-col justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-emerald-600" />
+                  <span>تفعيل نظام التنبيهات المنبثقة للكمبيوتر والجوال</span>
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  إرسال إشعارات منبثقة مباشرة للمستخدم عند قرع جرس بداية الحصة أو حالات الغياب المتكرر.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-neutral-800">
+                <button
+                  type="button"
+                  onClick={requestNotificationPermission}
+                  className="h-9 px-3.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  طلب إذن الإشعارات الآن
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => updateSetting('enablePushNotifications', !settings.enablePushNotifications)}
+                  className="p-1 rounded-xl cursor-pointer"
+                >
+                  {settings.enablePushNotifications ? (
+                    <div className="w-12 h-6 bg-emerald-600 rounded-full p-0.5 flex items-center justify-end transition">
+                      <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
+                      <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 1: USERS & CREDENTIALS */}
       {activeSection === 'users' && (
@@ -382,7 +547,7 @@ export const ManagerControlCenter: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION FOR SUBSTITUTE DELEGATION (Dedicated Tab inside Settings) */}
+      {/* SECTION FOR SUBSTITUTE DELEGATION */}
       {activeSection === 'substitutes' && (
         <div className="space-y-4">
           <div className="bg-amber-50/90 p-4 sm:p-5 rounded-2xl border border-amber-300 space-y-3">
@@ -397,7 +562,6 @@ export const ManagerControlCenter: React.FC = () => {
                 </p>
               </div>
 
-              {/* Stats Badge */}
               <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-amber-300 text-xs font-bold text-amber-900 shrink-0">
                 <span>الحصص المكلفة ببديل:</span>
                 <span className="px-2 py-0.5 bg-amber-200 text-amber-950 rounded-md font-mono text-sm">
@@ -406,9 +570,7 @@ export const ManagerControlCenter: React.FC = () => {
               </div>
             </div>
 
-            {/* Filter & Search Toolbar */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-amber-200">
-              {/* Day filter */}
               <div>
                 <label className="block text-xs font-bold text-amber-950 mb-1">تصفية حسب اليوم:</label>
                 <select
@@ -425,7 +587,6 @@ export const ManagerControlCenter: React.FC = () => {
                 </select>
               </div>
 
-              {/* Class filter */}
               <div>
                 <label className="block text-xs font-bold text-amber-950 mb-1">تصفية حسب الفصل:</label>
                 <select
@@ -442,7 +603,6 @@ export const ManagerControlCenter: React.FC = () => {
                 </select>
               </div>
 
-              {/* Search input */}
               <div>
                 <label className="block text-xs font-bold text-amber-950 mb-1">بحث سريع:</label>
                 <div className="relative">
@@ -459,7 +619,6 @@ export const ManagerControlCenter: React.FC = () => {
             </div>
           </div>
 
-          {/* Timetable Slots Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {timetable
               .filter(slot => {
@@ -503,7 +662,6 @@ export const ManagerControlCenter: React.FC = () => {
                       <strong className="text-slate-800">{slot.teacherName || 'غير محدد'}</strong>
                     </div>
 
-                    {/* Substitute Status Indicator */}
                     <div className="pt-2 border-t border-slate-100">
                       {slot.substituteTeacherName ? (
                         <div className="p-2 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between gap-2">
@@ -523,7 +681,7 @@ export const ManagerControlCenter: React.FC = () => {
                                 substituteTeacherName: undefined,
                               });
                             }}
-                            title="إلغاء تكليف البديل وإعادة الحصة للمعلّم الأصلي"
+                            title="إلغاء تكليف البديل"
                             className="p-1 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer transition"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -537,7 +695,6 @@ export const ManagerControlCenter: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Action Button */}
                   <button
                     type="button"
                     onClick={() => {
@@ -568,7 +725,7 @@ export const ManagerControlCenter: React.FC = () => {
               مواعيد الحصص الدراسية وتوقيت رصد الغياب
             </h3>
             <p className="text-xs text-blue-800 mt-0.5">
-              يمكن لمدير المدرسة تغيير موعد بداية ونهاية كل حصة وتحديد نافذة وقت رصد الحضور (بالدقائق) لضمان انضباط التحضير المدرسي.
+              يمكن لمدير المدرسة تغيير موعد بداية ونهاية كل حصة وتحديد نافذة وقت رصد الحضور.
             </p>
           </div>
 
@@ -585,13 +742,6 @@ export const ManagerControlCenter: React.FC = () => {
                     </span>
                     <h4 className="font-bold text-slate-900 text-sm">{timing.name}</h4>
                   </div>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      timing.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {timing.isActive ? 'مفعّلة' : 'معطّلة'}
-                  </span>
                 </div>
 
                 <div className="space-y-2 text-xs">
@@ -605,7 +755,7 @@ export const ManagerControlCenter: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500">نافذة رصد الغياب:</span>
                     <span className="font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
-                      خلال أول {timing.attendanceWindowMinutes} دقيقة
+                      خلال أول {timing.windowMinutes} دقيقة
                     </span>
                   </div>
                 </div>
@@ -663,7 +813,6 @@ export const ManagerControlCenter: React.FC = () => {
                     name: '',
                     classId: classes[0]?.id || 'class-9th',
                     seatNumber: students.length + 1,
-                    nationalId: '10' + Math.floor(10000000 + Math.random() * 90000000),
                     guardianPhone: '05' + Math.floor(10000000 + Math.random() * 90000000),
                   });
                   setShowStudentModal(true);
@@ -676,7 +825,6 @@ export const ManagerControlCenter: React.FC = () => {
             </div>
           </div>
 
-          {/* Classes list */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {classes.map(c => {
               const classStudents = students.filter(s => s.classId === c.id);
@@ -829,7 +977,6 @@ export const ManagerControlCenter: React.FC = () => {
                 </div>
               </div>
 
-              {/* Assigned Classes */}
               <div>
                 <AssignedClassesSelector
                   assignedClasses={userForm.assignedClasses}
@@ -912,35 +1059,15 @@ export const ManagerControlCenter: React.FC = () => {
                   type="number"
                   min={5}
                   max={45}
-                  value={editingTiming.attendanceWindowMinutes}
+                  value={editingTiming.windowMinutes}
                   onChange={e =>
                     setEditingTiming(prev =>
-                      prev ? { ...prev, attendanceWindowMinutes: Number(e.target.value) } : null
+                      prev ? { ...prev, windowMinutes: Number(e.target.value) } : null
                     )
                   }
                   required
                   className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden font-bold"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">
-                  المدة المسموحة للمعلم لرصد الحضور بعد قرع جرس بداية الحصة.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="timing-is-active"
-                  checked={editingTiming.isActive}
-                  onChange={e =>
-                    setEditingTiming(prev =>
-                      prev ? { ...prev, isActive: e.target.checked } : null
-                    )
-                  }
-                  className="rounded text-blue-900 cursor-pointer"
-                />
-                <label htmlFor="timing-is-active" className="font-bold text-slate-800 cursor-pointer">
-                  تفعيل هذه الحصة في الجدول اليومي
-                </label>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1014,56 +1141,10 @@ export const ManagerControlCenter: React.FC = () => {
               }}
               className="p-4 sm:p-5 space-y-3.5 text-xs sm:text-sm"
             >
-              {/* Quick Grade Presets */}
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  المرحلة والصف الدراسي:
+                  اسم الفصل والشعبة المحدد:
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-2">
-                  {[
-                    { label: 'الصف الثامن (8th)', grade: 'الصف الثامن', defaultName: 'الصف الثامن (أ)' },
-                    { label: 'الصف السابع (7th)', grade: 'الصف السابع', defaultName: 'الصف السابع (أ)' },
-                    { label: 'الصف التاسع (9th)', grade: 'الصف التاسع (9th)', defaultName: 'الصف التاسع (ب)' },
-                    { label: 'الصف العاشر (10th)', grade: 'الصف العاشر (10th)', defaultName: 'الصف العاشر (ب)' },
-                    { label: 'الصف 11 (11th)', grade: 'الصف الحادي عشر (11th)', defaultName: 'الصف الحادي عشر (ب)' },
-                    { label: 'الصف 12 (12th)', grade: 'الصف الثاني عشر (12th)', defaultName: 'الصف الثاني عشر (ب)' },
-                  ].map(p => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => {
-                        setClassForm(prev => ({
-                          ...prev,
-                          grade: p.grade,
-                          name: !editingClassId ? p.defaultName : prev.name,
-                        }));
-                      }}
-                      className={`px-2 py-1.5 rounded-lg text-xs font-bold border transition text-center cursor-pointer ${
-                        classForm.grade === p.grade
-                          ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-
-                <input
-                  type="text"
-                  value={classForm.grade}
-                  onChange={e => setClassForm(prev => ({ ...prev, grade: e.target.value }))}
-                  placeholder="الصف الدراسي (مثل: الصف الثامن أو العاشر)"
-                  className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:bg-white focus:outline-hidden"
-                />
-              </div>
-
-              {/* Specific Class Name with section */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block font-bold text-slate-700">اسم الفصل والشعبة المحدد:</label>
-                  <span className="text-[11px] text-slate-400">مثال: الصف الثامن (أ)</span>
-                </div>
                 <input
                   type="text"
                   value={classForm.name}
@@ -1072,25 +1153,8 @@ export const ManagerControlCenter: React.FC = () => {
                   placeholder="مثال: الصف الثامن (أ)"
                   className="w-full h-9 px-3 bg-slate-50 border border-slate-300 rounded-lg font-bold text-xs focus:bg-white focus:outline-hidden"
                 />
-                <div className="flex flex-wrap gap-1 mt-1.5 text-[11px]">
-                  <span className="text-slate-400">تسميات سريعة:</span>
-                  {['(أ)', '(ب)', '(ج)', 'شعبة 1', 'شعبة 2'].map(s => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => {
-                        const base = classForm.name.replace(/\s*(\(.*\)|شعبة.*)$/, '').trim() || classForm.grade;
-                        setClassForm(prev => ({ ...prev, name: `${base} ${s}` }));
-                      }}
-                      className="px-1.5 py-0.5 rounded border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold cursor-pointer"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
               </div>
 
-              {/* Room */}
               <div>
                 <label className="block font-bold text-slate-700 mb-1">القاعة / الغرفة الدراسية:</label>
                 <input
@@ -1152,9 +1216,11 @@ export const ManagerControlCenter: React.FC = () => {
                   name: studentForm.name.trim(),
                   classId: studentForm.classId,
                   seatNumber: Number(studentForm.seatNumber),
-                  nationalId: studentForm.nationalId,
                   guardianPhone: studentForm.guardianPhone,
-                  medicalAlert: false,
+                  avatarSeed: studentForm.name.split(' ')[0] || 'st',
+                  parentName: `ولي أمر ${studentForm.name.split(' ')[0]}`,
+                  parentPhone: studentForm.guardianPhone,
+                  consecutiveAbsences: 0,
                 });
                 setShowStudentModal(false);
               }}
@@ -1237,7 +1303,7 @@ export const ManagerControlCenter: React.FC = () => {
         </div>
       )}
 
-      {/* SUBSTITUTE TEACHER ASSIGNMENT MODAL (Direct Name Input or Dropdown) */}
+      {/* SUBSTITUTE TEACHER ASSIGNMENT MODAL */}
       {editingSubSlot && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95">
@@ -1264,7 +1330,6 @@ export const ManagerControlCenter: React.FC = () => {
               </button>
             </div>
 
-            {/* Slot Details Summary Box */}
             <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1">
               <div className="flex justify-between">
                 <span className="text-slate-500">المادة الدراسية:</span>
@@ -1276,9 +1341,7 @@ export const ManagerControlCenter: React.FC = () => {
               </div>
             </div>
 
-            {/* Input Form */}
             <div className="space-y-3.5 text-xs">
-              {/* Option A: Select from Registered Staff */}
               <div>
                 <label className="block font-bold text-slate-800 mb-1">
                   1. اختيار من قائمة المعلمين المسجلين بالمدرسة:
@@ -1308,25 +1371,20 @@ export const ManagerControlCenter: React.FC = () => {
                 </select>
               </div>
 
-              {/* Option B: Custom Teacher Name Input (Explicitly Requested by Principal) */}
               <div>
                 <label className="block font-bold text-slate-800 mb-1">
-                  2. أو كتابة اسم المعلم البديل يدويًا (اسم مخصص أو معلم خارجي):
+                  2. أو كتابة اسم المعلم البديل يدويًا:
                 </label>
                 <input
                   type="text"
                   value={subNameInput}
                   onChange={e => setSubNameInput(e.target.value)}
-                  placeholder="اكتب اسم المعلم البديل هنا (مثال: أ. حمزة العبادي، أو معلم احتياط)..."
+                  placeholder="اكتب اسم المعلم البديل هنا..."
                   className="w-full h-10 px-3 bg-white border border-amber-300 focus:border-amber-500 ring-1 ring-amber-100 rounded-xl font-bold text-slate-900 placeholder:text-slate-400"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">
-                  💡 بمجرد كتابة الاسم واعتماده، سيظهر هذا المعلم كبديل معتمد وتنتقل إليه صلاحية رصد الحضور لهذه الحصة.
-                </p>
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 border-t border-slate-100">
               {editingSubSlot.substituteTeacherName ? (
                 <button

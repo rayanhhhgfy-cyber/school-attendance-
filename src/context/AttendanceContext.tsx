@@ -17,6 +17,7 @@ import {
   UserAccount,
   PeriodTimingConfig,
   AppTheme,
+  MedicalExcuse,
 } from '../types';
 import {
   INITIAL_CLASSES,
@@ -45,8 +46,8 @@ export interface SessionMeta {
 
 interface AttendanceContextType {
   // Navigation & View
-  activeTab: 'take_attendance' | 'dashboard' | 'timetable' | 'students' | 'settings';
-  setActiveTab: (tab: 'take_attendance' | 'dashboard' | 'timetable' | 'students' | 'settings') => void;
+  activeTab: 'take_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings';
+  setActiveTab: (tab: 'take_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings') => void;
 
   // Authentication & Users
   currentUser: UserAccount | null;
@@ -81,6 +82,12 @@ interface AttendanceContextType {
   updateStudent: (id: string, updates: Partial<Student>) => void;
   deleteStudent: (id: string) => void;
 
+  // Medical Excuses
+  medicalExcuses: MedicalExcuse[];
+  uploadMedicalExcuse: (studentId: string, date: string, imageUrl: string, fileName?: string) => void;
+  getStudentExcuse: (studentId: string, date?: string) => MedicalExcuse | undefined;
+  deleteMedicalExcuse: (id: string) => void;
+
   // Active Class & Students
   activeClass: SchoolClass;
   activeStudents: Student[];
@@ -93,6 +100,7 @@ interface AttendanceContextType {
   getSessionMeta: (classId: string, periodNumber: number, date?: string) => SessionMeta | undefined;
 
   // Attendance Actions & Authorization
+  attendanceChangeCount: number;
   canUserEditAttendance: (classId: string, periodNumber: number) => { allowed: boolean; reason?: string };
   setStudentStatus: (studentId: string, status: AttendanceStatus, note?: string) => void;
   markAllPresent: () => void;
@@ -112,7 +120,7 @@ interface AttendanceContextType {
   staff: StaffMember[];
   updateStaffRole: (staffId: string, role: StaffRole) => void;
   settings: SystemSettings;
-  updateSetting: (key: keyof SystemSettings, val: boolean) => void;
+  updateSetting: (key: keyof SystemSettings, val: any) => void;
   toggleEmergencyLockdown: (reason?: string) => void;
 
   // Alerts & Notifications
@@ -121,6 +129,7 @@ interface AttendanceContextType {
   triggerTestAlert: (classId?: string, customMessage?: string) => void;
   dismissNotification: (id: string) => void;
   clearAllNotifications: () => void;
+  requestNotificationPermission: () => Promise<boolean>;
 
   // System Preferences
   theme: AppTheme;
@@ -153,7 +162,7 @@ const STORAGE_KEY_PREFIX = 'school_att_';
 
 export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Navigation
-  const [activeTab, setActiveTab] = useState<'take_attendance' | 'dashboard' | 'timetable' | 'students' | 'settings'>('take_attendance');
+  const [activeTab, setActiveTab] = useState<'take_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings'>('take_attendance');
 
   // Users & Authentication
   const [users, setUsers] = useState<UserAccount[]>(() => {
@@ -210,6 +219,18 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const [currentDate, setCurrentDate] = useState<string>(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
+  });
+
+  // Medical Excuses
+  const [medicalExcuses, setMedicalExcuses] = useState<MedicalExcuse[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'medical_excuses');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Attendance Change Count (track how many times attendance has been changed/saved)
+  const [attendanceChangeCount, setAttendanceChangeCount] = useState<number>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'change_count');
+    return saved ? parseInt(saved, 10) : 0;
   });
 
   // Attendance Records mapped by: `${classId}_${date}_p${period}` -> { [studentId]: AttendanceEntry }
@@ -280,7 +301,15 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   // Settings
   const [settings, setSettings] = useState<SystemSettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'settings');
-    return saved ? JSON.parse(saved) : INITIAL_SETTINGS;
+    const defaultSet: SystemSettings = {
+      ...INITIAL_SETTINGS,
+      schoolName: 'مدرسة الملك حسين بن طلال الثانوية للبنين',
+      editingDeadline: '14:00',
+      editingDeadlineEnabled: false,
+      enablePushNotifications: true,
+      requireExcuseImage: false,
+    };
+    return saved ? { ...defaultSet, ...JSON.parse(saved) } : defaultSet;
   });
 
   // Notifications
@@ -349,6 +378,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       localStorage.setItem(STORAGE_KEY_PREFIX + 'period_timings', JSON.stringify(periodTimings));
       localStorage.setItem(STORAGE_KEY_PREFIX + 'records', JSON.stringify(attendanceMap));
       localStorage.setItem(STORAGE_KEY_PREFIX + 'submitted_sessions', JSON.stringify(submittedSessions));
+      localStorage.setItem(STORAGE_KEY_PREFIX + 'medical_excuses', JSON.stringify(medicalExcuses));
+      localStorage.setItem(STORAGE_KEY_PREFIX + 'change_count', attendanceChangeCount.toString());
       localStorage.setItem(STORAGE_KEY_PREFIX + 'classes', JSON.stringify(classes));
       localStorage.setItem(STORAGE_KEY_PREFIX + 'students', JSON.stringify(students));
       localStorage.setItem(STORAGE_KEY_PREFIX + 'timetable', JSON.stringify(timetable));
@@ -363,7 +394,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     } catch {
       // Storage quota or private mode fallback
     }
-  }, [users, currentUser, periodTimings, attendanceMap, submittedSessions, classes, students, timetable, staff, settings, notifications, fastLoadMode, soundEnabled]);
+  }, [users, currentUser, periodTimings, attendanceMap, submittedSessions, medicalExcuses, attendanceChangeCount, classes, students, timetable, staff, settings, notifications, fastLoadMode, soundEnabled]);
 
   // Derived current session key
   const currentSessionKey = useMemo(() => {
@@ -400,6 +431,36 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const isCurrentSessionSubmitted = !!submittedSessions[currentSessionKey];
   const currentSessionMeta = submittedSessions[currentSessionKey];
+
+  // Medical Excuses methods
+  const uploadMedicalExcuse = (studentId: string, date: string, imageUrl: string, fileName?: string) => {
+    const id = 'excuse-' + Date.now();
+    const newExcuse: MedicalExcuse = {
+      id,
+      studentId,
+      date,
+      imageUrl,
+      fileName,
+      uploadedAt: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+      uploadedBy: currentUser?.name || 'المعلم',
+    };
+
+    setMedicalExcuses(prev => [newExcuse, ...prev.filter(e => !(e.studentId === studentId && e.date === date))]);
+
+    // Automatically update student status to excused if in current session
+    setStudentStatus(studentId, 'excused', 'تم إرفاق عذر طبي مصور');
+
+    if (soundEnabled) soundFx.playSuccess();
+  };
+
+  const getStudentExcuse = (studentId: string, date: string = currentDate): MedicalExcuse | undefined => {
+    return medicalExcuses.find(e => e.studentId === studentId && (e.date === date || !e.date));
+  };
+
+  const deleteMedicalExcuse = (id: string) => {
+    setMedicalExcuses(prev => prev.filter(e => e.id !== id));
+    if (soundEnabled) soundFx.playTap();
+  };
 
   // Helper methods to query submission state for any period
   const isSessionSubmitted = (classId: string, periodNumber: number, date: string = currentDate): boolean => {
@@ -537,6 +598,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       soundFx.playTap(status === 'present' ? 520 : status === 'absent' ? 320 : status === 'late' ? 420 : 480);
     }
 
+    setAttendanceChangeCount(prev => prev + 1);
+
     setAttendanceMap(prev => {
       const current = prev[currentSessionKey] || currentRecords;
       const updated = {
@@ -560,6 +623,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     if (settings.emergencyLockdown) return;
     if (soundEnabled) soundFx.playSuccess();
 
+    setAttendanceChangeCount(prev => prev + 1);
+
     setAttendanceMap(prev => {
       const updated: Record<string, AttendanceEntry> = {};
       activeStudents.forEach(st => {
@@ -580,6 +645,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const resetAttendanceSession = () => {
     if (settings.emergencyLockdown) return;
     if (soundEnabled) soundFx.playTap(350);
+
+    setAttendanceChangeCount(prev => prev + 1);
 
     setAttendanceMap(prev => {
       const updated: Record<string, AttendanceEntry> = {};
@@ -604,6 +671,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const reopenAttendanceSession = () => {
+    setAttendanceChangeCount(prev => prev + 1);
     setSubmittedSessions(prev => {
       const copy = { ...prev };
       delete copy[currentSessionKey];
@@ -640,6 +708,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       classId: selectedClassId,
     };
 
+    setAttendanceChangeCount(prev => prev + 1);
+
     setSubmittedSessions(prev => ({
       ...prev,
       [currentSessionKey]: meta,
@@ -665,7 +735,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   // System settings modification
-  const updateSetting = (key: keyof SystemSettings, val: boolean) => {
+  const updateSetting = (key: keyof SystemSettings, val: any) => {
     if (soundEnabled) soundFx.playTap();
     setSettings(prev => ({ ...prev, [key]: val }));
   };
@@ -684,17 +754,53 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     }));
 
     // Add alert notification
-    const newNotif: AppNotification = {
-      id: 'notif-' + Date.now(),
-      title: nextVal ? 'إغلاق طوارئ للنظام' : 'إلغاء إغلاق الطوارئ',
-      message: nextVal
+    addNotification(
+      nextVal ? 'إغلاق طوارئ للنظام' : 'إلغاء إغلاق الطوارئ',
+      nextVal
         ? `تم تفعيل حظر التعديل الطارئ: ${reason || 'إجراء احترازي إداري لمنع تعديل سجلات الحضور'}`
         : 'تم رفع حظر الطوارئ وإتاحة تسجيل الحضور لجميع المعلمين.',
-      time: 'الآن',
-      type: nextVal ? 'warning' : 'info',
-      read: false,
-    };
-    setNotifications(prev => [newNotif, ...prev]);
+      nextVal ? 'warning' : 'info'
+    );
+  };
+
+  // Browser Push Notification Helper
+  const sendNativePushNotification = (title: string, message: string) => {
+    if (typeof window !== 'undefined' && 'Notification' in window && settings.enablePushNotifications) {
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification(title, {
+            body: message,
+            icon: '/icon.svg',
+            badge: '/icon.svg',
+            dir: 'rtl',
+            lang: 'ar',
+          });
+        } catch {
+          // Fallback if ServiceWorker required
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready.then(reg => {
+              reg.showNotification(title, {
+                body: message,
+                icon: '/icon.svg',
+                dir: 'rtl',
+                lang: 'ar',
+              });
+            });
+          }
+        }
+      }
+    }
+  };
+
+  const requestNotificationPermission = async (): Promise<boolean> => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        sendNativePushNotification('تفعيل التنبيهات المنبثقة', 'تم تفعيل التنبيهات المدرسية المنبثقة بنجاح.');
+        return true;
+      }
+    }
+    return false;
   };
 
   // Add custom notification
@@ -716,23 +822,17 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       read: false,
     };
     setNotifications(prev => [newNotif, ...prev]);
+    sendNativePushNotification(title, message);
   };
 
   // Trigger test smart alert (5 min before class)
   const triggerTestAlert = (classId = 'class-9th', customMessage?: string) => {
     if (soundEnabled) soundFx.playAlert();
     const targetClass = classes.find(c => c.id === classId) || classes[0];
-    const alertId = 'notif-' + Date.now();
-    const newNotif: AppNotification = {
-      id: alertId,
-      title: 'تنبيه ذكي: موعد الحصة القادمة',
-      message: customMessage || `تبدأ الحصة القادمة لـ (${targetClass.name}) خلال 5 دقائق. يرجى رصد الحضور.`,
-      time: 'الآن',
-      type: 'reminder',
-      classId: targetClass.id,
-      read: false,
-    };
-    setNotifications(prev => [newNotif, ...prev]);
+    const title = 'تنبيه ذكي: موعد الحصة القادمة';
+    const message = customMessage || `تبدأ الحصة القادمة لـ (${targetClass.name}) خلال 5 دقائق. يرجى رصد الحضور.`;
+
+    addNotification(title, message, 'reminder', targetClass.id);
   };
 
   const dismissNotification = (id: string) => {
@@ -753,6 +853,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const quickAddStudentNote = (studentId: string, note: string) => {
+    setAttendanceChangeCount(prev => prev + 1);
     setAttendanceMap(prev => {
       const current = prev[currentSessionKey] || currentRecords;
       const rec = current[studentId] || {
@@ -1061,6 +1162,21 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     if (settings.emergencyLockdown) {
       return { allowed: false, reason: '⚠️ النظام في حالة إغلاق طارئ مؤقت يمنع رصد أو تعديل السجلات.' };
     }
+
+    // Manager deadline enforcement
+    if (currentUser.role !== 'manager' && settings.editingDeadlineEnabled && settings.editingDeadline) {
+      const now = new Date();
+      const [dH, dM] = settings.editingDeadline.split(':').map(Number);
+      const deadlineMin = dH * 60 + (dM || 0);
+      const currentMin = now.getHours() * 60 + now.getMinutes();
+      if (currentMin > deadlineMin) {
+        return {
+          allowed: false,
+          reason: `⚠️ تم تجاوز الموعد النهائي المحدد من إدارة المدرسة لتعديل الحضور (${settings.editingDeadline}). لا يمكن إجراء تعديلات بعد هذا الموعد.`,
+        };
+      }
+    }
+
     if (currentUser.role === 'manager') {
       // Manager has unrestricted access across all classes & periods
       return { allowed: true };
@@ -1122,6 +1238,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       reason: 'أنت غير مسند لهذا الفصل أو هذه الحصة. الصلاحية مقتصرة على معلم الفصل المعتمد أو مدير المدرسة.',
     };
   };
+
   const overallStats = useMemo(() => {
     const totalStudents = students.length;
     let totalPresent = 0;
@@ -1192,6 +1309,10 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         addStudent,
         updateStudent,
         deleteStudent,
+        medicalExcuses,
+        uploadMedicalExcuse,
+        getStudentExcuse,
+        deleteMedicalExcuse,
         activeClass,
         activeStudents,
         currentSessionKey,
@@ -1201,6 +1322,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         submittedSessions,
         isSessionSubmitted,
         getSessionMeta,
+        attendanceChangeCount,
         canUserEditAttendance,
         setStudentStatus,
         markAllPresent,
@@ -1223,6 +1345,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         triggerTestAlert,
         dismissNotification,
         clearAllNotifications,
+        requestNotificationPermission,
         fastLoadMode,
         setFastLoadMode,
         soundEnabled,

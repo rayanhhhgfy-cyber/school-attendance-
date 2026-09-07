@@ -41,7 +41,8 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
   label = 'الفصول المسندة للمعلم:',
   teacherName,
 }) => {
-  const { classes, addClass, updateClass, deleteClass } = useAttendance();
+  const { classes, addClass, updateClass, deleteClass, currentUser } = useAttendance();
+  const isManager = currentUser?.role === 'manager';
 
   // Dialog / Inline Editor State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -59,6 +60,7 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
 
   // Open form to add a new class
   const handleOpenAdd = (preset?: (typeof GRADE_PRESETS)[0]) => {
+    if (!isManager) return;
     setEditingClassId(null);
     if (preset) {
       setClassNameInput(preset.defaultName);
@@ -77,6 +79,7 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
   // Open form to edit an existing class
   const handleOpenEdit = (cls: SchoolClass, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isManager) return;
     setEditingClassId(cls.id);
     setClassNameInput(cls.name);
     setGradeLevelInput(cls.gradeLevel || 'الصف الدراسي');
@@ -89,11 +92,12 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
   // Confirm delete class
   const handleOpenDelete = (cls: SchoolClass, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isManager) return;
     setClassToDelete(cls);
   };
 
   const handleConfirmDelete = () => {
-    if (!classToDelete) return;
+    if (!classToDelete || !isManager) return;
     deleteClass(classToDelete.id);
     onChange(assignedClasses.filter(id => id !== classToDelete.id));
     setClassToDelete(null);
@@ -102,6 +106,7 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
   // Save class (Add or Update)
   const handleSaveClass = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isManager) return;
     const trimmedName = classNameInput.trim();
     if (!trimmedName) {
       setErrorMsg('يرجى تحديد اسم الفصل والشعبة بدقة');
@@ -197,43 +202,47 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => handleOpenAdd()}
-            className={`text-xs font-bold px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 shadow-xs ${
-              isDark
-                ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                : 'bg-blue-700 hover:bg-blue-800 text-white'
-            }`}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>إضافة فصل جديد</span>
-          </button>
+          {isManager && (
+            <button
+              type="button"
+              onClick={() => handleOpenAdd()}
+              className={`text-xs font-bold px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 shadow-xs ${
+                isDark
+                  ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                  : 'bg-blue-700 hover:bg-blue-800 text-white'
+              }`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>إضافة فصل جديد</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Quick Add Presets Bar (e.g., 8th grade, 7th grade) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
-        <span className={`text-[11px] font-bold shrink-0 flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          <Sparkles className="w-3 h-3 text-amber-500" />
-          <span>إضافة سريعة:</span>
-        </span>
-        {GRADE_PRESETS.slice(0, 4).map(preset => (
-          <button
-            key={preset.grade}
-            type="button"
-            onClick={() => handleOpenAdd(preset)}
-            className={`shrink-0 px-2 py-0.5 rounded-md font-bold transition cursor-pointer border flex items-center gap-1 ${
-              isDark
-                ? 'bg-[#18181f] hover:bg-neutral-800 text-slate-300 border-neutral-700'
-                : 'bg-white hover:bg-blue-50 text-slate-700 border-slate-200 shadow-2xs hover:border-blue-300'
-            }`}
-          >
-            <Plus className="w-2.5 h-2.5 text-blue-500" />
-            <span>{preset.label}</span>
-          </button>
-        ))}
-      </div>
+      {/* Quick Add Presets Bar for Manager */}
+      {isManager && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
+          <span className={`text-[11px] font-bold shrink-0 flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <Sparkles className="w-3 h-3 text-amber-500" />
+            <span>إضافة سريعة:</span>
+          </span>
+          {GRADE_PRESETS.slice(0, 4).map(preset => (
+            <button
+              key={preset.grade}
+              type="button"
+              onClick={() => handleOpenAdd(preset)}
+              className={`shrink-0 px-2 py-0.5 rounded-md font-bold transition cursor-pointer border flex items-center gap-1 ${
+                isDark
+                  ? 'bg-[#18181f] hover:bg-neutral-800 text-slate-300 border-neutral-700'
+                  : 'bg-white hover:bg-blue-50 text-slate-700 border-slate-200 shadow-2xs hover:border-blue-300'
+              }`}
+            >
+              <Plus className="w-2.5 h-2.5 text-blue-500" />
+              <span>{preset.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Classes Grid / Checklist */}
       <div
@@ -243,7 +252,7 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
       >
         {classes.length === 0 ? (
           <div className="py-6 text-center text-xs text-slate-400">
-            لا توجد فصول دراسية مضافة حالياً. اضغط على "إضافة فصل جديد" أعلاه.
+            لا توجد فصول دراسية مضافة حالياً.
           </div>
         ) : (
           classes.map(c => {
@@ -304,30 +313,32 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
                   </div>
                 </div>
 
-                {/* Right side: Actions (Edit & Delete) */}
-                <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    title="تعديل هذا الفصل"
-                    onClick={e => handleOpenEdit(c, e)}
-                    className={`p-1 rounded-md transition cursor-pointer ${
-                      isDark
-                        ? 'hover:bg-neutral-700 text-slate-400 hover:text-white'
-                        : 'hover:bg-slate-200 text-slate-500 hover:text-slate-900'
-                    }`}
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
+                {/* Right side: Actions (Edit & Delete) - Only Manager */}
+                {isManager && (
+                  <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      title="تعديل هذا الفصل"
+                      onClick={e => handleOpenEdit(c, e)}
+                      className={`p-1 rounded-md transition cursor-pointer ${
+                        isDark
+                          ? 'hover:bg-neutral-700 text-slate-400 hover:text-white'
+                          : 'hover:bg-slate-200 text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
 
-                  <button
-                    type="button"
-                    title="حذف هذا الفصل"
-                    onClick={e => handleOpenDelete(c, e)}
-                    className="p-1 rounded-md transition cursor-pointer text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-400"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      title="حذف هذا الفصل"
+                      onClick={e => handleOpenDelete(c, e)}
+                      className="p-1 rounded-md transition cursor-pointer text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 dark:hover:text-red-400"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })
@@ -336,7 +347,7 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
 
       {/* INLINE / OVERLAY MODAL: ADD OR EDIT CLASS */}
       <AnimatePresence>
-        {isFormOpen && (
+        {isFormOpen && isManager && (
           <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -421,7 +432,7 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
                   />
                 </div>
 
-                {/* Specific Class Name (e.g. الصف الثامن أ or 8th grade section 1) */}
+                {/* Specific Class Name */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block font-bold text-slate-700 dark:text-slate-300">
@@ -526,7 +537,7 @@ export const AssignedClassesSelector: React.FC<AssignedClassesSelectorProps> = (
 
       {/* DELETE CONFIRMATION MODAL */}
       <AnimatePresence>
-        {classToDelete && (
+        {classToDelete && isManager && (
           <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
