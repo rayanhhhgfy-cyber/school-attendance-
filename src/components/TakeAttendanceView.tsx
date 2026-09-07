@@ -468,34 +468,34 @@ export const TakeAttendanceView: React.FC = () => {
         {/* Attendance Stats Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2.5 pt-4">
           {/* Total */}
-          <div className="bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
+          <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.1 }} className="bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">إجمالي الطلاب</span>
             <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 block">{stats.total}</span>
-          </div>
+          </motion.div>
 
           {/* Present */}
-          <div className="bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
+          <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.1 }} className="bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">حاضر (الافتراضي)</span>
             <span className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">{stats.present}</span>
-          </div>
+          </motion.div>
 
           {/* Absent */}
-          <div className="bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
+          <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.1 }} className="bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">غائب</span>
             <span className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400 mt-0.5 block">{stats.absent}</span>
-          </div>
+          </motion.div>
 
           {/* Late */}
-          <div className="bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
+          <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.1 }} className="bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">متأخر</span>
             <span className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400 mt-0.5 block">{stats.late}</span>
-          </div>
+          </motion.div>
 
           {/* Excused */}
-          <div className="col-span-2 sm:col-span-4 lg:col-span-1 bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
+          <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.1 }} className="col-span-2 sm:col-span-4 lg:col-span-1 bg-slate-50 dark:bg-[#121215] rounded-xl p-3 border border-slate-200 dark:border-neutral-800 text-center transition-colors">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">عذر طبي</span>
             <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 mt-0.5 block">{stats.excused}</span>
-          </div>
+          </motion.div>
         </div>
 
         {/* Guidance Tip */}

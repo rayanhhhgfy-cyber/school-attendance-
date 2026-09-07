@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { Student, AttendanceStatus } from '../types';
 import { useAttendance } from '../context/AttendanceContext';
 import { MedicalExcuseModal } from './MedicalExcuseModal';
@@ -93,8 +94,11 @@ export const StudentCard: React.FC<StudentCardProps> = ({
   };
 
   return (
-    <div
+    <motion.div
       id={`student-card-${student.id}`}
+      whileHover={{ scale: 1.004 }}
+      whileTap={{ scale: 0.998 }}
+      transition={{ duration: 0.12 }}
       className={`relative bg-white dark:bg-neutral-900 rounded-xl border transition-all shadow-xs overflow-hidden ${
         currentStatus === 'absent'
           ? 'border-red-300 dark:border-red-900/60 bg-red-50/20 dark:bg-red-950/20'
@@ -373,6 +377,6 @@ export const StudentCard: React.FC<StudentCardProps> = ({
         isOpen={showExcuseModal}
         onClose={() => setShowExcuseModal(false)}
       />
-    </div>
+    </motion.div>
   );
 };
