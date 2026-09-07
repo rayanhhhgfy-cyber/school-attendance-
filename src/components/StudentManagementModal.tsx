@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Student, SchoolClass } from '../types';
 import { useAttendance } from '../context/AttendanceContext';
@@ -18,10 +18,9 @@ import {
   AlertCircle,
   FileText,
   Users,
-  HeartHandshake,
-  GraduationCap,
+  FileSpreadsheet,
+  Upload,
   Sparkles,
-  ArrowRight,
   ShieldAlert,
 } from 'lucide-react';
 
@@ -58,10 +57,11 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
     studentToEdit?.classId || initialClassId || selectedClassId || classes[0]?.id || 'class-9th'
   );
 
+  const excelInputRef = useRef<HTMLInputElement>(null);
+
   // Single Student Form State
   const [name, setName] = useState('');
   const [seatNumber, setSeatNumber] = useState<number>(1);
-  const [nationalId, setNationalId] = useState('');
   const [parentName, setParentName] = useState('');
   const [parentPhone, setParentPhone] = useState('');
   const [healthNote, setHealthNote] = useState('');
@@ -86,7 +86,6 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
     if (studentToEdit && (initialMode === 'edit' || initialMode === 'contact' || initialMode === 'delete_confirm')) {
       setName(studentToEdit.name);
       setSeatNumber(studentToEdit.seatNumber);
-      setNationalId(studentToEdit.nationalId);
       setParentName(studentToEdit.parentName || '');
       setParentPhone(studentToEdit.parentPhone || studentToEdit.guardianPhone || '');
       setHealthNote(studentToEdit.healthNote || '');
@@ -98,7 +97,6 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
       
       setName('');
       setSeatNumber(nextSeat);
-      setNationalId('11' + Math.floor(10000000 + Math.random() * 90000000));
       setParentName('');
       setParentPhone('05' + Math.floor(10000000 + Math.random() * 90000000));
       setHealthNote('');
@@ -110,6 +108,71 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
   if (!isOpen) return null;
 
   const currentClassObj = classes.find(c => c.id === selectedClass) || classes[0];
+
+  // Robust "5-Year-Old Format" Excel/CSV/Text Parser
+  const extractNamesFromContent = (text: string): string[] => {
+    const EXCLUDE_HEADER_KEYWORDS = [
+      'اسم الطالب', 'أسماء الطلاب', 'الاسم الثلاثي', 'الاسم الرباعي',
+      'رقم الهوية', 'رقم الجلوس', 'رقم المقعد', 'الفصل', 'الصف',
+      'ملاحظات', 'حاضر', 'غائب', 'متأخر', 'تاريخ', 'كشف الحضور',
+      'اسم', 'الاسم', 'المدرسة', 'جدول', 'م', 'ت', 'السجل المدني',
+      'name', 'student name', 'id', 'seat', 'class', 'status', 'notes',
+    ];
+
+    // Split by newlines, commas, tabs, semicolons, or pipe symbols
+    const rawTokens = text.split(/[\r\n,;\t|]+/);
+    const foundNames: string[] = [];
+
+    rawTokens.forEach(token => {
+      // Clean leading numbers (e.g., "1. خالد" -> "خالد")
+      let clean = token.trim().replace(/^[0-9\-\.\s\)\(]+/, '').trim();
+      if (!clean) return;
+
+      // Check header matches
+      const lower = clean.toLowerCase();
+      const isHeader = EXCLUDE_HEADER_KEYWORDS.some(kw => lower === kw || lower.includes(kw));
+      if (isHeader) return;
+
+      // Ignore pure numbers or very short strings
+      if (/^\d+$/.test(clean) || clean.length < 3) return;
+
+      // Must have valid Arabic or English characters and at least 2 words (e.g. First Last)
+      const words = clean.split(/\s+/).filter(w => w.length > 1);
+      if (words.length >= 1 && /^[\u0600-\u06FFa-zA-Z\s]+$/.test(clean)) {
+        if (!foundNames.includes(clean)) {
+          foundNames.push(clean);
+        }
+      }
+    });
+
+    return foundNames;
+  };
+
+  const handleExcelFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        const names = extractNamesFromContent(content);
+        if (names.length > 0) {
+          setBulkNames(names.join('\n'));
+          setSuccessMsg(`تم استخراج ${names.length} اسم طالب بنجاح من شيت الإكسل!`);
+        } else {
+          setErrorMsg('تعذر العثور على أسماء طلاب واضحة في الملف. يرجى مراجعة الملف أو لصق الأسماء يدوياً.');
+        }
+      }
+    };
+    reader.onerror = () => {
+      setErrorMsg('حدث خطأ أثناء قراءة شيت الإكسل.');
+    };
+    reader.readAsText(file);
+  };
 
   // Handle single student save (add or edit)
   const handleSaveStudent = (e: React.FormEvent) => {
@@ -130,7 +193,6 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
       addStudent({
         name: name.trim(),
         seatNumber: Number(seatNumber) || 1,
-        nationalId: nationalId.trim() || '11' + Date.now().toString().slice(-8),
         classId: selectedClass,
         avatarSeed: name.trim().split(' ')[0] || 'Student',
         parentName: parentName.trim() || `ولي أمر ${name.trim().split(' ')[0]}`,
@@ -145,7 +207,6 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
       updateStudent(studentToEdit.id, {
         name: name.trim(),
         seatNumber: Number(seatNumber) || studentToEdit.seatNumber,
-        nationalId: nationalId.trim() || studentToEdit.nationalId,
         classId: selectedClass,
         parentName: parentName.trim() || studentToEdit.parentName,
         parentPhone: parentPhone.trim(),
@@ -173,7 +234,7 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
       .filter(l => l.length > 0);
 
     if (lines.length === 0) {
-      setErrorMsg('يرجى إدخال اسم طالب واحد على الأقل (اسم في كل سطر).');
+      setErrorMsg('يرجى إدخال أو رفع اسم طالب واحد على الأقل.');
       return;
     }
 
@@ -184,7 +245,6 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
       addStudent({
         name: studentName,
         seatNumber: currentSeat++,
-        nationalId: '11' + (10000000 + idx + Math.floor(Math.random() * 80000000)),
         classId: selectedClass,
         avatarSeed: studentName.split(' ')[0] || `Student${idx}`,
         parentName: `ولي أمر ${studentName.split(' ')[0]}`,
@@ -238,7 +298,7 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
               {activeMode === 'add' && <UserPlus className="w-5 h-5" />}
               {activeMode === 'edit' && <Edit2 className="w-5 h-5" />}
-              {activeMode === 'bulk_add' && <Users className="w-5 h-5" />}
+              {activeMode === 'bulk_add' && <FileSpreadsheet className="w-5 h-5" />}
               {activeMode === 'contact' && <MessageCircle className="w-5 h-5" />}
               {activeMode === 'delete_confirm' && <Trash2 className="w-5 h-5 text-red-300" />}
             </div>
@@ -246,7 +306,7 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
               <h3 className="font-extrabold text-base sm:text-lg leading-tight">
                 {activeMode === 'add' && 'إضافة طالب جديد'}
                 {activeMode === 'edit' && `تعديل بيانات: ${studentToEdit?.name}`}
-                {activeMode === 'bulk_add' && 'إضافة جماعية سريعة للطلاب'}
+                {activeMode === 'bulk_add' && 'إضافة أسماء الطلاب من شيت الإكسل'}
                 {activeMode === 'contact' && `تواصل مع ولي أمر: ${studentToEdit?.name}`}
                 {activeMode === 'delete_confirm' && 'تأكيد حذف الطالب'}
               </h3>
@@ -296,8 +356,8 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                   : 'bg-white dark:bg-neutral-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800 border border-slate-200 dark:border-neutral-700'
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
-              <span>إضافة سريعة بالأسماء (جماعية)</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+              <span>استيراد من كشف إكسل / أسماء</span>
             </button>
           </div>
         )}
@@ -372,21 +432,6 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                   />
                 </div>
 
-                {/* National / Student ID */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    رقم الهوية الوطنية / السجل المدني:
-                  </label>
-                  <input
-                    type="text"
-                    value={nationalId}
-                    onChange={e => setNationalId(e.target.value)}
-                    placeholder="10 أرقام"
-                    dir="ltr"
-                    className="w-full h-11 px-3.5 bg-slate-50 dark:bg-neutral-950 border border-slate-300 dark:border-neutral-700 rounded-xl text-sm font-mono text-slate-900 dark:text-white focus:bg-white dark:focus:bg-neutral-900 focus:border-blue-600 focus:outline-hidden text-right"
-                  />
-                </div>
-
                 {/* Guardian Phone */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -404,7 +449,7 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                 </div>
 
                 {/* Guardian Name */}
-                <div className="sm:col-span-2">
+                <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     اسم ولي الأمر (اختياري):
                   </label>
@@ -432,19 +477,6 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                     placeholder="مثال: حساسية من الغبار، سكري، ربو، يرتدي نظارة طبية"
                     className="w-full h-11 px-3.5 bg-slate-50 dark:bg-neutral-950 border border-slate-300 dark:border-neutral-700 rounded-xl text-sm text-slate-900 dark:text-white focus:bg-white dark:focus:bg-neutral-900 focus:border-blue-600 focus:outline-hidden"
                   />
-                  {/* Quick health tags */}
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {['سليم معافى', 'حساسية طعام', 'ربو', 'سكري', 'نظارة طبية'].map(tag => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => setHealthNote(tag === 'سليم معافى' ? '' : tag)}
-                        className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700 text-slate-600 dark:text-slate-300 text-[11px] font-medium border border-slate-200 dark:border-neutral-700 transition cursor-pointer"
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {/* Academic / Behavior Notes */}
@@ -483,17 +515,40 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
             </form>
           )}
 
-          {/* MODE 2: BULK ADD BY NAMES */}
+          {/* MODE 2: BULK ADD BY EXCEL SHEET OR NAMES */}
           {activeMode === 'bulk_add' && (
             <form onSubmit={handleBulkAdd} className="space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-2xl p-3.5 text-xs text-blue-900 dark:text-blue-200 space-y-1">
-                <span className="font-bold block flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-blue-700 dark:text-blue-400" />
-                  <span>إضافة سريعة: انسخ قائمة أسماء الطلاب والصقها هنا</span>
-                </span>
-                <p className="text-slate-600 dark:text-slate-300">
-                  اكتب اسماً واحداً في كل سطر. سيقوم النظام تلقائياً بإنشاء أرقام الجلوس وأرقام الهوية وتوزيعهم على الفصل المحدد.
-                </p>
+              {/* Excel Import Dropzone */}
+              <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border-2 border-dashed border-emerald-300 dark:border-emerald-800/80 rounded-2xl p-4 text-center space-y-2.5">
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mx-auto shadow-inner">
+                  <FileSpreadsheet className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm sm:text-base text-emerald-950 dark:text-emerald-200">
+                    رفع أسماء الطلاب عبر ملف إكسل (Excel / CSV / TXT)
+                  </h4>
+                  <p className="text-xs text-emerald-800 dark:text-emerald-300/80 max-w-md mx-auto mt-0.5">
+                    القارئ الذكي يستخرج أسماء الطلاب تلقائياً حتى من أبسط وأعقد شيتات الإكسل بكافة التنسيقات.
+                  </p>
+                </div>
+
+                <input
+                  type="file"
+                  ref={excelInputRef}
+                  onChange={handleExcelFileUpload}
+                  accept=".xlsx,.xls,.csv,.txt"
+                  className="hidden"
+                />
+
+                <button
+                  type="button"
+                  id="btn-upload-excel-file"
+                  onClick={() => excelInputRef.current?.click()}
+                  className="h-10 px-5 bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs sm:text-sm rounded-xl transition shadow-xs cursor-pointer inline-flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>اختر شيت الإكسل من جهازك</span>
+                </button>
               </div>
 
               <div>
@@ -515,7 +570,7 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  قائمة الأسماء (اسم واحد في كل سطر): <span className="text-red-500">*</span>
+                  قائمة الأسماء المستخرجة أو المكتوبة (اسم في كل سطر): <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   rows={6}
@@ -526,7 +581,7 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                   className="w-full p-3.5 bg-slate-50 dark:bg-neutral-950 border border-slate-300 dark:border-neutral-700 rounded-2xl text-sm font-medium text-slate-900 dark:text-white focus:bg-white dark:focus:bg-neutral-900 focus:border-blue-600 focus:outline-hidden leading-relaxed font-sans"
                 />
                 <span className="text-[11px] text-slate-400 mt-1 block">
-                  العدد المكتوب حالياً:{' '}
+                  عدد الأسماء الحالية:{' '}
                   {bulkNames.split('\n').filter(l => l.trim().length > 0).length} طالب
                 </span>
               </div>
@@ -545,7 +600,7 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                   className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                 >
                   <Users className="w-4 h-4" />
-                  <span>إضافة جميع الطلاب دفعة واحدة</span>
+                  <span>إضافة جميع الأسماء للفصل</span>
                 </button>
               </div>
             </form>
@@ -562,8 +617,6 @@ export const StudentManagementModal: React.FC<StudentManagementModalProps> = ({
                     <span>المقعد: {studentToEdit.seatNumber}</span>
                     <span>•</span>
                     <span>الفصل: {currentClassObj?.name}</span>
-                    <span>•</span>
-                    <span>الهوية: {studentToEdit.nationalId}</span>
                   </div>
                 </div>
                 <div className="text-left font-mono">

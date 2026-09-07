@@ -137,8 +137,7 @@ export const TakeAttendanceView: React.FC = () => {
     return activeStudents.filter(student => {
       const matchesSearch =
         student.name.includes(searchQuery) ||
-        student.seatNumber.toString().includes(searchQuery) ||
-        student.nationalId.includes(searchQuery);
+        student.seatNumber.toString().includes(searchQuery);
 
       if (!matchesSearch) return false;
 
@@ -563,7 +562,7 @@ export const TakeAttendanceView: React.FC = () => {
                     <div>
                       <span className="font-bold text-slate-900 dark:text-white block">{st.name}</span>
                       <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                        مقعد {st.seatNumber} • هوية {st.nationalId}
+                        مقعد {st.seatNumber}
                       </span>
                     </div>
                     <div className="text-left font-mono text-xs text-red-900 dark:text-red-300 bg-red-50 dark:bg-red-950/60 px-2 py-1 rounded border border-red-200 dark:border-red-900 flex items-center gap-1">

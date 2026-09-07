@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAttendance } from '../context/AttendanceContext';
-import { Bell, X, Trash2, CheckCircle2, Clock, AlertTriangle, Info, BookOpenCheck } from 'lucide-react';
+import { Bell, X, Trash2, CheckCircle2, Clock, AlertTriangle, Info, BookOpenCheck, BellRing } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface NotificationModalProps {
@@ -21,7 +21,12 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, on
     setSelectedClassId,
     setSelectedPeriod,
     setActiveTab,
+    requestNotificationPermission,
   } = useAttendance();
+
+  const [permGranted, setPermGranted] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
+  });
 
   if (!isOpen) return null;
 
@@ -32,6 +37,11 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, on
       setActiveTab('take_attendance');
       onClose();
     }
+  };
+
+  const handleEnablePush = async () => {
+    const granted = await requestNotificationPermission();
+    setPermGranted(granted);
   };
 
   return (
@@ -76,6 +86,23 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, on
               </button>
             </div>
           </div>
+
+          {/* Browser Push Permission Banner */}
+          {!permGranted && (
+            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+                <BellRing className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>إشعارات المتصفح والسطح المنبثقة (Push Notifications) غير مفعلة</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleEnablePush}
+                className="h-8 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition cursor-pointer flex-shrink-0"
+              >
+                تفعيل الإشعارات
+              </button>
+            </div>
+          )}
 
           {/* List */}
           <div className="flex-1 overflow-y-auto py-3 space-y-2.5">

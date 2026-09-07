@@ -39,8 +39,8 @@ import { AssignedClassesSelector } from './AssignedClassesSelector';
 export const LoginPage: React.FC = () => {
   const { login, registerUser, users, classes, students, theme, toggleTheme } = useAttendance();
 
-  // Modal State
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  // Modal State - default open for immediate login
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(true);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
 
   // Login Form State

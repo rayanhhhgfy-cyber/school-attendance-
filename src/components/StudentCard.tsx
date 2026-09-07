@@ -5,6 +5,8 @@
 
 import React, { useState } from 'react';
 import { Student, AttendanceStatus } from '../types';
+import { useAttendance } from '../context/AttendanceContext';
+import { MedicalExcuseModal } from './MedicalExcuseModal';
 import {
   Check,
   X,
@@ -16,6 +18,7 @@ import {
   Edit2,
   Trash2,
   Phone,
+  Upload,
 } from 'lucide-react';
 
 interface StudentCardProps {
@@ -43,8 +46,12 @@ export const StudentCard: React.FC<StudentCardProps> = ({
   onDeleteStudent,
   onContactGuardian,
 }) => {
+  const { getStudentExcuse, currentDate } = useAttendance();
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showExcuseModal, setShowExcuseModal] = useState(false);
   const [tempNote, setTempNote] = useState(note || '');
+
+  const excuse = getStudentExcuse(student.id, currentDate);
 
   const getStatusBadge = () => {
     switch (currentStatus) {
@@ -134,12 +141,21 @@ export const StudentCard: React.FC<StudentCardProps> = ({
                     <span>غياب متكرر ({student.consecutiveAbsences} أيام)</span>
                   </span>
                 )}
+                {excuse && (
+                  <button
+                    type="button"
+                    onClick={() => setShowExcuseModal(true)}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-100 dark:bg-blue-950 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-700 rounded-full font-bold text-xs hover:bg-blue-200 cursor-pointer transition"
+                    title="انقر لاستعراض وتحميل صورة العذر الطبي"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>عذر طبي مرفق 📄</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center flex-wrap gap-2 text-xs text-slate-500 font-medium mt-0.5">
                 <span>المقعد: {student.seatNumber}</span>
-                <span>•</span>
-                <span>الهوية: {student.nationalId}</span>
                 {student.healthNote && (
                   <>
                     <span>•</span>
@@ -153,9 +169,25 @@ export const StudentCard: React.FC<StudentCardProps> = ({
             </div>
           </div>
 
-          {/* Current Status Badge, Note, and Management Buttons */}
+          {/* Current Status Badge, Note, Medical Excuse Upload, and Management Buttons */}
           <div className="flex items-center gap-1.5 justify-between sm:justify-end flex-wrap">
             {getStatusBadge()}
+
+            {/* Medical Excuse Upload / View Button */}
+            <button
+              type="button"
+              id={`btn-excuse-${student.id}`}
+              onClick={() => setShowExcuseModal(true)}
+              title={excuse ? 'استعراض وتحميل العذر الطبي المرفق' : 'إرفاق صورة عذر طبي'}
+              className={`h-8 px-2 rounded-lg border flex items-center gap-1 text-xs font-semibold transition cursor-pointer ${
+                excuse
+                  ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-900 dark:text-blue-200 border-blue-300 dark:border-blue-700'
+                  : 'bg-slate-50 dark:bg-neutral-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-700'
+              }`}
+            >
+              <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="hidden sm:inline">{excuse ? 'عرض العذر 📄' : 'إرفاق عذر'}</span>
+            </button>
 
             {/* Note Button */}
             <button
@@ -281,7 +313,10 @@ export const StudentCard: React.FC<StudentCardProps> = ({
             <button
               id={`btn-excused-${student.id}`}
               type="button"
-              onClick={() => onStatusChange('excused')}
+              onClick={() => {
+                onStatusChange('excused');
+                setShowExcuseModal(true);
+              }}
               className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
                 currentStatus === 'excused'
                   ? 'bg-blue-700 dark:bg-blue-600 text-white ring-2 ring-blue-300 dark:ring-blue-700 shadow-xs'
@@ -330,6 +365,14 @@ export const StudentCard: React.FC<StudentCardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Medical Excuse Upload & Viewing Modal */}
+      <MedicalExcuseModal
+        student={student}
+        date={currentDate}
+        isOpen={showExcuseModal}
+        onClose={() => setShowExcuseModal(false)}
+      />
     </div>
   );
 };
