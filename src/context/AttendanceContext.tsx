@@ -767,25 +767,34 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const sendNativePushNotification = (title: string, message: string) => {
     if (typeof window !== 'undefined' && 'Notification' in window && settings.enablePushNotifications) {
       if (Notification.permission === 'granted') {
+        const options = {
+          body: message,
+          icon: '/icon.svg',
+          badge: '/icon.svg',
+          dir: 'rtl' as const,
+          lang: 'ar',
+        };
+
         try {
-          new Notification(title, {
-            body: message,
-            icon: '/icon.svg',
-            badge: '/icon.svg',
-            dir: 'rtl',
-            lang: 'ar',
-          });
-        } catch {
-          // Fallback if ServiceWorker required
-          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-            navigator.serviceWorker.ready.then(reg => {
-              reg.showNotification(title, {
-                body: message,
-                icon: '/icon.svg',
-                dir: 'rtl',
-                lang: 'ar',
+          if ('serviceWorker' in navigator) {
+            Promise.race([
+              navigator.serviceWorker.ready,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 500))
+            ]).then((reg: any) => {
+              reg.showNotification(title, options).catch(() => {
+                new Notification(title, options);
               });
+            }).catch(() => {
+              new Notification(title, options);
             });
+          } else {
+            new Notification(title, options);
+          }
+        } catch (e) {
+          try {
+            new Notification(title, options);
+          } catch (err) {
+            console.error('Push notification failed:', err);
           }
         }
       }
