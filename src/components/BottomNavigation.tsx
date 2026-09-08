@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { useAttendance } from '../context/AttendanceContext';
-import { BookOpenCheck, LayoutDashboard, CalendarDays, History, Menu } from 'lucide-react';
+import { BookOpenCheck, LayoutDashboard, CalendarDays, History, Menu, ShieldCheck } from 'lucide-react';
 
 interface BottomNavigationProps {
   onOpenBurgerMenu: () => void;
@@ -20,7 +20,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenBurger
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-neutral-900 border-t border-slate-200 dark:border-neutral-800 shadow-lg safe-area-inset-bottom transition-colors"
       aria-label="شريط التنقل السفلي"
     >
-      <div className="grid grid-cols-5 gap-1 p-1 max-w-md mx-auto">
+      <div className="grid grid-cols-6 gap-0.5 p-1 max-w-md mx-auto">
         {/* 1. Take Attendance */}
         <button
           id="mobile-nav-take_attendance"
@@ -37,7 +37,26 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ onOpenBurger
               activeTab === 'take_attendance' ? 'text-emerald-400' : 'text-slate-500 dark:text-slate-400'
             }`}
           />
-          <span className="text-[10px] font-bold whitespace-nowrap">الرصد</span>
+          <span className="text-[9px] font-bold whitespace-nowrap">الرصد</span>
+        </button>
+
+        {/* 2. Today's Attendance */}
+        <button
+          id="mobile-nav-todays_attendance"
+          type="button"
+          onClick={() => setActiveTab('todays_attendance')}
+          className={`h-12 py-1 px-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+            activeTab === 'todays_attendance'
+              ? 'bg-blue-900 dark:bg-blue-800 text-white font-bold shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800 font-medium active:bg-slate-200 dark:active:bg-neutral-700'
+          }`}
+        >
+          <ShieldCheck
+            className={`w-4 h-4 ${
+              activeTab === 'todays_attendance' ? 'text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+            }`}
+          />
+          <span className="text-[9px] font-bold whitespace-nowrap">حضور اليوم</span>
         </button>
 
         {/* 2. History (السجلات السابقة) */}

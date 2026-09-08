@@ -385,6 +385,19 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           <button
+            id="tab-todays-attendance"
+            onClick={() => setActiveTab('todays_attendance')}
+            className={`h-9 px-3.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition cursor-pointer ${
+              activeTab === 'todays_attendance'
+                ? 'bg-blue-900 dark:bg-blue-600 text-white shadow-xs'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-800'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>حضور اليوم</span>
+          </button>
+
+          <button
             id="tab-history"
             onClick={() => setActiveTab('history')}
             className={`h-9 px-3.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition cursor-pointer ${

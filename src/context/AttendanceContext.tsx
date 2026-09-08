@@ -46,8 +46,8 @@ export interface SessionMeta {
 
 interface AttendanceContextType {
   // Navigation & View
-  activeTab: 'take_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings';
-  setActiveTab: (tab: 'take_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings') => void;
+  activeTab: 'take_attendance' | 'todays_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings';
+  setActiveTab: (tab: 'take_attendance' | 'todays_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings') => void;
 
   // Authentication & Users
   currentUser: UserAccount | null;
@@ -162,7 +162,7 @@ const STORAGE_KEY_PREFIX = 'school_att_';
 
 export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Navigation
-  const [activeTab, setActiveTab] = useState<'take_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings'>('take_attendance');
+  const [activeTab, setActiveTab] = useState<'take_attendance' | 'todays_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings'>('take_attendance');
 
   // Users & Authentication
   const [users, setUsers] = useState<UserAccount[]>(() => {

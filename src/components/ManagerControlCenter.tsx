@@ -61,6 +61,11 @@ export const ManagerControlCenter: React.FC = () => {
     settings,
     updateSetting,
     requestNotificationPermission,
+    addNotification,
+    isSessionSubmitted,
+    getSessionMeta,
+    currentDate,
+    selectedPeriod,
   } = useAttendance();
 
   const [activeSection, setActiveSection] = useState<'users' | 'schedules' | 'substitutes' | 'timings' | 'classes_students' | 'manager_controls'>('users');
@@ -999,33 +1004,69 @@ export const ManagerControlCenter: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {classes.map(c => {
               const classStudents = students.filter(s => s.classId === c.id);
+              const isSubmitted = isSessionSubmitted(c.id, selectedPeriod, currentDate);
+              const meta = getSessionMeta(c.id, selectedPeriod, currentDate);
+
               return (
                 <div
                   key={c.id}
-                  className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-2 hover:border-slate-300 transition"
+                  className="bg-white dark:bg-neutral-900 p-3.5 rounded-xl border border-slate-200 dark:border-neutral-800 shadow-xs flex flex-col justify-between space-y-2 hover:border-slate-300 dark:hover:border-neutral-700 transition"
                 >
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-900 text-sm">{c.name}</h4>
-                    <span className="text-xs text-slate-500">{c.room}</span>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-slate-900 dark:text-white text-sm">{c.name}</h4>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{c.room}</span>
+                    </div>
+
+                    <div className="text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between mt-1.5">
+                      <span>عدد الطلاب:</span>
+                      <span className="font-bold text-blue-900 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded font-mono">
+                        {classStudents.length} طالب
+                      </span>
+                    </div>
+
+                    {/* Attendance Confirmation Status Badge */}
+                    <div className="mt-2 text-xs">
+                      {isSubmitted ? (
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 rounded-lg text-emerald-900 dark:text-emerald-300">
+                          <span className="font-bold block flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>مؤكد • تم رصد الحضور</span>
+                          </span>
+                          {meta && (
+                            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block mt-0.5">
+                              حاضر: {meta.present} | غائب: {meta.absent} | وقت الرصد: {meta.submittedAt}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="p-2 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 rounded-lg text-amber-900 dark:text-amber-300">
+                          <span className="font-bold block flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            <span>غير مؤكد • بانتظار الرصد</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-600 flex items-center justify-between">
-                    <span>عدد الطلاب:</span>
-                    <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded font-mono">
-                      {classStudents.length} طالب
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 pt-1">
+
+                  <div className="flex items-center gap-1 pt-1 border-t border-slate-100 dark:border-neutral-800">
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedClassId(c.id);
                         setActiveTab('take_attendance');
                       }}
-                      className="flex-1 h-7 bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1"
+                      className={`flex-1 h-8 px-2 rounded-lg font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                        isSubmitted
+                          ? 'bg-emerald-700 hover:bg-emerald-600 text-white shadow-2xs'
+                          : 'bg-blue-900 hover:bg-blue-800 text-white shadow-2xs'
+                      }`}
                     >
-                      <BookOpen className="w-3 h-3" />
-                      <span>رصد الحضور</span>
+                      <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>{isSubmitted ? 'عرض / تعديل الحضور' : 'رصد الحضور'}</span>
                     </button>
+
                     <button
                       type="button"
                       title="تعديل بيانات الفصل"
@@ -1039,10 +1080,11 @@ export const ManagerControlCenter: React.FC = () => {
                         });
                         setShowClassModal(true);
                       }}
-                      className="h-7 w-7 text-amber-600 hover:bg-amber-50 rounded-lg flex items-center justify-center transition cursor-pointer"
+                      className="h-8 w-8 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/50 rounded-lg flex items-center justify-center transition cursor-pointer border border-slate-200 dark:border-neutral-800"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
+
                     <button
                       type="button"
                       title="حذف الفصل"
@@ -1051,7 +1093,7 @@ export const ManagerControlCenter: React.FC = () => {
                           deleteClass(c.id);
                         }
                       }}
-                      className="h-7 w-7 text-red-600 hover:bg-red-50 rounded-lg flex items-center justify-center transition cursor-pointer"
+                      className="h-8 w-8 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg flex items-center justify-center transition cursor-pointer border border-slate-200 dark:border-neutral-800"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1590,10 +1632,20 @@ export const ManagerControlCenter: React.FC = () => {
                     const matched = users.find(
                       u => u.id === subSelectUserId || u.name === finalName
                     );
+                    const subId = matched ? matched.id : `sub-${Date.now()}`;
                     updateTimetableSlot(editingSubSlot.id, {
-                      substituteTeacherId: matched ? matched.id : `sub-${Date.now()}`,
+                      substituteTeacherId: subId,
                       substituteTeacherName: finalName,
                     });
+
+                    // Send notification to the substitute teacher
+                    addNotification(
+                      'تنبيه تكليف كمعلم بديل',
+                      `تم تكليفك كمعلم بديل لحصة (${editingSubSlot.subject}) - الفصل: (${editingSubSlot.className}) - يوم ${editingSubSlot.day} (الحصة ${editingSubSlot.periodNumber}). يرجى رصد الحضور للحصة.`,
+                      'reminder',
+                      editingSubSlot.classId
+                    );
+
                     setEditingSubSlot(null);
                   }}
                   disabled={!subNameInput.trim()}

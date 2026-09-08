@@ -9,6 +9,7 @@ import { AttendanceProvider, useAttendance } from './context/AttendanceContext';
 import { Header } from './components/Header';
 import { BottomNavigation } from './components/BottomNavigation';
 import { TakeAttendanceView } from './components/TakeAttendanceView';
+import { TodaysAttendanceView } from './components/TodaysAttendanceView';
 import { AttendanceHistoryView } from './components/AttendanceHistoryView';
 import { AdminDashboardView } from './components/AdminDashboardView';
 import { TimetableRemindersView } from './components/TimetableRemindersView';
@@ -56,6 +57,7 @@ const AppContent: React.FC = () => {
             transition={{ duration: 0.15, ease: 'easeOut' }}
           >
             {activeTab === 'take_attendance' && <TakeAttendanceView />}
+            {activeTab === 'todays_attendance' && <TodaysAttendanceView />}
             {activeTab === 'history' && <AttendanceHistoryView />}
             {activeTab === 'dashboard' && (
               <AdminDashboardView onOpenEmergencyModal={() => setIsEmergencyOpen(true)} />

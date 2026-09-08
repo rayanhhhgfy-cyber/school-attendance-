@@ -62,7 +62,7 @@ export const BurgerMenuDrawer: React.FC<BurgerMenuDrawerProps> = ({
 
   const isOnline = useOnlineStatus();
 
-  const handleNavClick = (tab: 'take_attendance' | 'dashboard' | 'timetable' | 'history' | 'settings') => {
+  const handleNavClick = (tab: 'take_attendance' | 'todays_attendance' | 'dashboard' | 'timetable' | 'history' | 'settings') => {
     setActiveTab(tab);
     onClose();
   };
@@ -73,6 +73,12 @@ export const BurgerMenuDrawer: React.FC<BurgerMenuDrawerProps> = ({
       title: 'تسجيل الحضور',
       desc: 'رصد الحضور السريع بالاستثناء حسب الحصص',
       icon: BookOpenCheck,
+    },
+    {
+      id: 'todays_attendance' as const,
+      title: 'حضور اليوم الشامل',
+      desc: 'حالة كشوفات الحضور لكافة فصول المدرسة اليوم',
+      icon: ShieldCheck,
     },
     {
       id: 'history' as const,
