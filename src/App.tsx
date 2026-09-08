@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { AttendanceProvider, useAttendance } from './context/AttendanceContext';
 import { Header } from './components/Header';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -46,15 +47,25 @@ const AppContent: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 md:pb-16">
-        {activeTab === 'take_attendance' && <TakeAttendanceView />}
-        {activeTab === 'history' && <AttendanceHistoryView />}
-        {activeTab === 'dashboard' && (
-          <AdminDashboardView onOpenEmergencyModal={() => setIsEmergencyOpen(true)} />
-        )}
-        {activeTab === 'timetable' && <TimetableRemindersView />}
-        {activeTab === 'settings' && (
-          <SettingsAccessibilityView onOpenLoginModal={() => setIsLoginModalOpen(true)} />
-        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+          >
+            {activeTab === 'take_attendance' && <TakeAttendanceView />}
+            {activeTab === 'history' && <AttendanceHistoryView />}
+            {activeTab === 'dashboard' && (
+              <AdminDashboardView onOpenEmergencyModal={() => setIsEmergencyOpen(true)} />
+            )}
+            {activeTab === 'timetable' && <TimetableRemindersView />}
+            {activeTab === 'settings' && (
+              <SettingsAccessibilityView onOpenLoginModal={() => setIsLoginModalOpen(true)} />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Persistent Bottom Mobile Navigation Bar */}
