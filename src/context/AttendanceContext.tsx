@@ -322,7 +322,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const [theme, setThemeState] = useState<AppTheme>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'theme');
     if (saved === 'dark' || saved === 'light') return saved;
-    return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'light';
   });
 
   const setTheme = (newTheme: AppTheme) => {
