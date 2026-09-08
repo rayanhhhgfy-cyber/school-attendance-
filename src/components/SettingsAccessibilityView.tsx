@@ -75,7 +75,10 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
   const [profileName, setProfileName] = useState(currentUser?.name || '');
   const [profileSubject, setProfileSubject] = useState(currentUser?.subject || '');
   const [profilePhone, setProfilePhone] = useState(currentUser?.phone || '');
+  const [profileUsername, setProfileUsername] = useState(currentUser?.username || '');
+  const [profilePassword, setProfilePassword] = useState(currentUser?.password || '');
   const [profileSaved, setProfileSaved] = useState(false);
+  const [credentialsError, setCredentialsError] = useState('');
 
   // Display Preferences State (Stored in localStorage for persistence)
   const [largeFontMode, setLargeFontMode] = useState<boolean>(() => {
@@ -184,11 +187,31 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
+    setCredentialsError('');
+
+    const newUsername = profileUsername.trim();
+    const newPassword = profilePassword.trim();
+
+    if (!newUsername || !newPassword) {
+      setCredentialsError('اسم المستخدم وكلمة المرور مطلوبان ولا يمكن تركهما فارغين.');
+      return;
+    }
+
+    // Check if username is taken by another user
+    const existingUser = users.find(
+      u => u.id !== currentUser.id && u.username.toLowerCase() === newUsername.toLowerCase()
+    );
+    if (existingUser) {
+      setCredentialsError('اسم المستخدم هذا مسجل مسبقاً لمستخدم آخر. يرجى اختيار اسم مستخدم مختلف.');
+      return;
+    }
 
     updateUserAccount(currentUser.id, {
       name: profileName.trim() || currentUser.name,
       subject: profileSubject.trim() || currentUser.subject,
       phone: profilePhone.trim() || currentUser.phone,
+      username: newUsername,
+      password: newPassword,
     });
 
     setProfileSaved(true);
@@ -481,7 +504,14 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
             )}
           </div>
 
-          <form onSubmit={handleSaveProfile} className="space-y-3">
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            {credentialsError && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl text-red-900 dark:text-red-300 text-xs font-bold flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-red-600 shrink-0" />
+                <span>{credentialsError}</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -522,12 +552,52 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
               </div>
             </div>
 
+            {/* Credentials Card (Username & Password) */}
+            <div className="p-4 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 space-y-3">
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span>تغيير اسم المستخدم وكلمة المرور الخاصة بالحساب</span>
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    اسم المستخدم (Username):
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    dir="ltr"
+                    value={profileUsername}
+                    onChange={e => setProfileUsername(e.target.value)}
+                    className="w-full h-10 px-3 bg-white dark:bg-neutral-900 font-mono font-bold text-blue-900 dark:text-blue-300 rounded-xl border border-slate-300 dark:border-neutral-700 text-xs text-left"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    كلمة المرور (Password):
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    dir="ltr"
+                    value={profilePassword}
+                    onChange={e => setProfilePassword(e.target.value)}
+                    className="w-full h-10 px-3 bg-white dark:bg-neutral-900 font-mono font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-neutral-700 text-xs text-left"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-end pt-1">
               <button
                 type="submit"
-                className="h-9 px-4 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
+                id="btn-save-teacher-credentials"
+                className="h-9 px-5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
               >
-                تحديث بيانات الملف الشخصي
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>تحديث البيانات وكلمة المرور</span>
               </button>
             </div>
           </form>
@@ -748,140 +818,6 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Option: Auto Mark Present */}
-          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                افتراض حضور جميع الطلاب
-              </h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                تحديد الكل «حاضر» افتراضياً عند فتح الفصل، لترصد الاستثناء فقط.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleToggleAutoPresent(!autoMarkPresent)}
-              className="p-1 rounded-xl cursor-pointer flex-shrink-0"
-            >
-              {autoMarkPresent ? (
-                <div className="w-11 h-6 bg-emerald-600 rounded-full p-0.5 flex items-center justify-end transition">
-                  <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
-                </div>
-              ) : (
-                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
-                  <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
-                </div>
-              )}
-            </button>
-          </div>
-
-          {/* Option: Compact Mode */}
-          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                النمط المكثف المضغوط
-              </h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                تصغير المسافات لعرض أكبر عدد من الطلاب بدون الحاجة للتمرير.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleToggleCompactMode(!compactDisplayMode)}
-              className="p-1 rounded-xl cursor-pointer flex-shrink-0"
-            >
-              {compactDisplayMode ? (
-                <div className="w-11 h-6 bg-emerald-600 rounded-full p-0.5 flex items-center justify-end transition">
-                  <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
-                </div>
-              ) : (
-                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
-                  <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
-                </div>
-              )}
-            </button>
-          </div>
-
-          {/* Option: Large Font */}
-          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                تكبير الخط بالقوائم
-              </h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                تسهيل القراءة السريعة أثناء الوقوف أمام مقاعد الطلاب في الصف.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleToggleLargeFont(!largeFontMode)}
-              className="p-1 rounded-xl cursor-pointer flex-shrink-0"
-            >
-              {largeFontMode ? (
-                <div className="w-11 h-6 bg-emerald-600 rounded-full p-0.5 flex items-center justify-end transition">
-                  <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
-                </div>
-              ) : (
-                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
-                  <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
-                </div>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 6. Auditory & TTS Assistance Card */}
-      <div className="bg-white dark:bg-neutral-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-neutral-800 shadow-xs space-y-4 transition-colors">
-        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-neutral-800 pb-3">
-          <Volume2 className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
-          <span>المساعد الصوتي والتأثيرات السمعية</span>
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">تشغيل نغمات التأكيد عند اللمس</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                إصدار نغمة خفيفة ومريحة عند رصد الطالب لتأكيد العملية بنجاح.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-1 rounded-xl cursor-pointer flex-shrink-0"
-              aria-label="تبديل نغمات التأكيد"
-            >
-              {soundEnabled ? (
-                <div className="w-11 h-6 bg-emerald-600 rounded-full p-0.5 flex items-center justify-end transition">
-                  <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
-                </div>
-              ) : (
-                <div className="w-11 h-6 bg-slate-300 dark:bg-neutral-700 rounded-full p-0.5 flex items-center justify-start transition">
-                  <div className="w-5 h-5 bg-white rounded-full shadow-xs" />
-                </div>
-              )}
-            </button>
-          </div>
-
-          <div className="p-3.5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 flex items-center justify-between gap-3">
-            <div>
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">تجربة المساعد الصوتي باللغة العربية</h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                قراءة أسماء الحضور وملخص الفصل صوتياً بنطق عربي واضح.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleTestSpeech}
-              className="h-9 px-3 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer flex-shrink-0"
-            >
-              <Volume2 className="w-3.5 h-3.5" />
-              <span>استماع</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* 7. Fast-Load Mode (Weak Connectivity) */}
