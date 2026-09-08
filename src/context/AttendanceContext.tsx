@@ -1186,8 +1186,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       }
     }
 
-    if (currentUser.role === 'manager') {
-      // Manager has unrestricted access across all classes & periods
+    if (currentUser.role === 'manager' || currentUser.permissions?.canEditAnyAttendance) {
+      // Manager or teacher with granted permission has unrestricted access across all classes & periods
       return { allowed: true };
     }
 

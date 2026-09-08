@@ -89,6 +89,11 @@ export const ManagerControlCenter: React.FC = () => {
     subject: '',
     phone: '',
     assignedClasses: [] as string[],
+    canAddClasses: false,
+    canAddStudents: false,
+    canAddTeachers: false,
+    canAssignSubstitutes: false,
+    canEditAnyAttendance: false,
   });
 
   // Class modal state
@@ -125,6 +130,11 @@ export const ManagerControlCenter: React.FC = () => {
       subject: 'اللغة العربية والمهارات اللغوية',
       phone: '05' + Math.floor(10000000 + Math.random() * 90000000),
       assignedClasses: [classes[0]?.id || 'class-9th'],
+      canAddClasses: false,
+      canAddStudents: true,
+      canAddTeachers: false,
+      canAssignSubstitutes: false,
+      canEditAnyAttendance: false,
     });
     setShowUserModal(true);
   };
@@ -140,6 +150,11 @@ export const ManagerControlCenter: React.FC = () => {
       subject: user.subject || '',
       phone: user.phone || '',
       assignedClasses: user.assignedClasses || [],
+      canAddClasses: !!user.permissions?.canAddClasses,
+      canAddStudents: !!user.permissions?.canAddStudents,
+      canAddTeachers: !!user.permissions?.canAddTeachers,
+      canAssignSubstitutes: !!user.permissions?.canAssignSubstitutes,
+      canEditAnyAttendance: !!user.permissions?.canEditAnyAttendance,
     });
     setShowUserModal(true);
   };
@@ -147,6 +162,14 @@ export const ManagerControlCenter: React.FC = () => {
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!userForm.username.trim() || !userForm.password || !userForm.name.trim()) return;
+
+    const permissions = {
+      canAddClasses: userForm.canAddClasses,
+      canAddStudents: userForm.canAddStudents,
+      canAddTeachers: userForm.canAddTeachers,
+      canAssignSubstitutes: userForm.canAssignSubstitutes,
+      canEditAnyAttendance: userForm.canEditAnyAttendance,
+    };
 
     if (editingUserId) {
       updateUserAccount(editingUserId, {
@@ -157,6 +180,7 @@ export const ManagerControlCenter: React.FC = () => {
         subject: userForm.subject,
         phone: userForm.phone,
         assignedClasses: userForm.assignedClasses,
+        permissions,
       });
     } else {
       addUserAccount({
@@ -168,6 +192,7 @@ export const ManagerControlCenter: React.FC = () => {
         phone: userForm.phone,
         teacherId: 'staff-' + Math.floor(10 + Math.random() * 90),
         assignedClasses: userForm.assignedClasses,
+        permissions,
       });
     }
     setShowUserModal(false);
@@ -1197,6 +1222,57 @@ export const ManagerControlCenter: React.FC = () => {
                   teacherName={userForm.name}
                 />
               </div>
+
+              {/* Granular Permissions Controls */}
+              {userForm.role === 'teacher' && (
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-900/60 space-y-2 text-xs">
+                  <span className="font-bold text-purple-950 dark:text-purple-200 block">
+                    تخصيص الصلاحيات الإضافية للمعلم (إتاحة / سحب الصلاحيات):
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={userForm.canAddClasses}
+                        onChange={e => setUserForm(prev => ({ ...prev, canAddClasses: e.target.checked }))}
+                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
+                      />
+                      <span>إضافة فصول دراسية</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={userForm.canAddStudents}
+                        onChange={e => setUserForm(prev => ({ ...prev, canAddStudents: e.target.checked }))}
+                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
+                      />
+                      <span>إضافة وتسجيل طلاب</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={userForm.canAssignSubstitutes}
+                        onChange={e => setUserForm(prev => ({ ...prev, canAssignSubstitutes: e.target.checked }))}
+                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
+                      />
+                      <span>تكليف معلم بديل</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={userForm.canEditAnyAttendance}
+                        onChange={e => setUserForm(prev => ({ ...prev, canEditAnyAttendance: e.target.checked }))}
+                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
+                      />
+                      <span>تعديل حضور كافة الفصول</span>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button

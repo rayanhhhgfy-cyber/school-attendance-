@@ -41,7 +41,6 @@ export const LoginPage: React.FC = () => {
 
   // Modal State - default open for immediate login
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(true);
-  const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
 
   // Login Form State
   const [loginUsername, setLoginUsername] = useState('');
@@ -50,23 +49,8 @@ export const LoginPage: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Register Form State
-  const [regName, setRegName] = useState('');
-  const [regUsername, setRegUsername] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regRole, setRegRole] = useState<'teacher' | 'manager'>('teacher');
-  const [regSubject, setRegSubject] = useState('رياضيات');
-  const [regAssignedClasses, setRegAssignedClasses] = useState<string[]>(() =>
-    classes && classes.length > 0 ? classes.map(c => c.id) : ['class-9th', 'class-10th', 'class-11th', 'class-12th']
-  );
-  const [regPhone, setRegPhone] = useState('');
-  const [regError, setRegError] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
-
-  const handleOpenAuth = (tab: 'login' | 'register') => {
-    setAuthTab(tab);
+  const handleOpenAuth = () => {
     setLoginError('');
-    setRegError('');
     setIsAuthModalOpen(true);
   };
 
@@ -89,44 +73,6 @@ export const LoginPage: React.FC = () => {
         setIsAuthModalOpen(false);
       }
     }, 200);
-  };
-
-  const handleRegisterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegError('');
-
-    if (!regName.trim()) {
-      setRegError('يرجى كتابة الاسم الكامل.');
-      return;
-    }
-    if (!regUsername.trim()) {
-      setRegError('يرجى كتابة اسم المستخدم.');
-      return;
-    }
-    if (!regPassword || regPassword.length < 3) {
-      setRegError('كلمة المرور يجب أن لا تقل عن 3 خانات.');
-      return;
-    }
-
-    setIsRegistering(true);
-    setTimeout(() => {
-      const res = registerUser({
-        name: regName.trim(),
-        username: regUsername.trim(),
-        password: regPassword,
-        role: regRole,
-        subject: regRole === 'teacher' ? regSubject : undefined,
-        assignedClasses: regRole === 'teacher' && regAssignedClasses.length > 0 ? regAssignedClasses : undefined,
-        phone: regPhone.trim() || undefined,
-      });
-      setIsRegistering(false);
-
-      if (!res.success) {
-        setRegError(res.message || 'حدث خطأ أثناء التسجيل.');
-      } else {
-        setIsAuthModalOpen(false);
-      }
-    }, 250);
   };
 
   const handleQuickLogin = (u: string, p: string) => {
@@ -207,22 +153,11 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             id="btn-nav-login"
-            onClick={() => handleOpenAuth('login')}
-            className="h-9 sm:h-10 px-3.5 sm:px-4 bg-transparent hover:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 font-bold rounded-xl text-xs sm:text-sm transition cursor-pointer flex items-center gap-1.5"
+            onClick={handleOpenAuth}
+            className="h-9 sm:h-10 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md transition cursor-pointer flex items-center gap-1.5"
           >
             <LogIn className="w-4 h-4" />
             <span>تسجيل الدخول</span>
-          </button>
-
-          {/* Register Button */}
-          <button
-            type="button"
-            id="btn-nav-register"
-            onClick={() => handleOpenAuth('register')}
-            className="h-9 sm:h-10 px-3.5 sm:px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md transition cursor-pointer flex items-center gap-1.5"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>إنشاء حساب جديد</span>
           </button>
         </div>
       </header>
@@ -251,25 +186,11 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             id="hero-btn-login"
-            onClick={() => handleOpenAuth('login')}
-            className="h-12 sm:h-13 px-6 sm:px-8 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-lg transition cursor-pointer flex items-center gap-2.5 text-sm sm:text-base group"
+            onClick={handleOpenAuth}
+            className="h-12 sm:h-13 px-8 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-lg transition cursor-pointer flex items-center gap-2.5 text-sm sm:text-base group"
           >
             <LogIn className="w-5 h-5 group-hover:translate-x-[-2px] transition-transform" />
-            <span>تسجيل الدخول للنظام</span>
-          </button>
-
-          <button
-            type="button"
-            id="hero-btn-register"
-            onClick={() => handleOpenAuth('register')}
-            className={`h-12 sm:h-13 px-6 sm:px-8 font-bold rounded-2xl border transition cursor-pointer flex items-center gap-2 text-sm sm:text-base ${
-              isDark
-                ? 'bg-[#0d0d0f] hover:bg-neutral-800 text-white border-neutral-700'
-                : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-xs'
-            }`}
-          >
-            <UserPlus className="w-5 h-5 text-blue-500" />
-            <span>إنشاء حساب كمعلم أو إداري</span>
+            <span>تسجيل الدخول للنظام المدرسي</span>
           </button>
         </div>
 
@@ -520,18 +441,10 @@ export const LoginPage: React.FC = () => {
             <button
               type="button"
               id="cta-btn-login"
-              onClick={() => handleOpenAuth('login')}
+              onClick={handleOpenAuth}
               className="h-11 px-7 bg-white hover:bg-blue-50 text-blue-950 font-black rounded-xl text-sm transition cursor-pointer shadow-md"
             >
               تسجيل الدخول
-            </button>
-            <button
-              type="button"
-              id="cta-btn-register"
-              onClick={() => handleOpenAuth('register')}
-              className="h-11 px-7 bg-blue-800/80 hover:bg-blue-800 text-white border border-blue-700 font-bold rounded-xl text-sm transition cursor-pointer"
-            >
-              إنشاء حساب جديد
             </button>
           </div>
         </div>
@@ -585,360 +498,124 @@ export const LoginPage: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
 
-              {/* Tabs Switcher */}
-              <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-neutral-900 rounded-2xl mb-5 border border-slate-200 dark:border-neutral-800">
-                <button
-                  type="button"
-                  id="tab-btn-login"
-                  onClick={() => {
-                    setAuthTab('login');
-                    setLoginError('');
-                  }}
-                  className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                    authTab === 'login'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>تسجيل الدخول</span>
-                </button>
+          {/* LOGIN CONTENT */}
+          <div className="space-y-4">
+            <div className="text-right">
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                تسجيل الدخول ببيانات الحساب
+              </h3>
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                أدخل اسم المستخدم وكلمة المرور المعتمدة من مدير المدرسة
+              </p>
+                </div>
 
-                <button
-                  type="button"
-                  id="tab-btn-register"
-                  onClick={() => {
-                    setAuthTab('register');
-                    setRegError('');
-                  }}
-                  className={`flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                    authTab === 'register'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>إنشاء حساب جديد</span>
-                </button>
+            {loginError && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{loginError}</span>
+                  </div>
+            )}
+
+            <form onSubmit={handleLoginSubmit} className="space-y-3.5 text-right">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  اسم المستخدم (Username):
+                </label>
+                <div className="relative">
+                      <input
+                    id="modal-login-username"
+                        type="text"
+                    value={loginUsername}
+                    onChange={e => setLoginUsername(e.target.value)}
+                    placeholder="مثال: rayyan أو saleh"
+                    dir="ltr"
+                    autoComplete="username"
+                        required
+                    className={`w-full h-11 pr-10 pl-3 rounded-xl border text-sm font-medium focus:outline-hidden transition text-left ${
+                          isDark
+                            ? 'bg-[#141418] text-white border-neutral-700 focus:border-blue-500'
+                            : 'bg-slate-50 text-slate-900 border-slate-300 focus:bg-white focus:border-blue-600'
+                        }`}
+                      />
+                  <User className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
               </div>
 
-              {/* LOGIN TAB CONTENT */}
-              {authTab === 'login' && (
-                <div className="space-y-4">
-                  <div className="text-right">
-                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                      مرحباً بعودتك
-                    </h3>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      أدخل بيانات حسابك للدخول إلى النظام المدرسي
-                    </p>
-                  </div>
-
-                  {loginError && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                      <span>{loginError}</span>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleLoginSubmit} className="space-y-3.5 text-right">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        اسم المستخدم (Username):
-                      </label>
-                      <div className="relative">
-                        <input
-                          id="modal-login-username"
-                          type="text"
-                          value={loginUsername}
-                          onChange={e => setLoginUsername(e.target.value)}
-                          placeholder="مثال: rayyan أو saleh"
-                          dir="ltr"
-                          autoComplete="username"
-                          required
-                          className={`w-full h-11 pr-10 pl-3 rounded-xl border text-sm font-medium focus:outline-hidden transition text-left ${
-                            isDark
-                              ? 'bg-[#141418] text-white border-neutral-700 focus:border-blue-500'
-                              : 'bg-slate-50 text-slate-900 border-slate-300 focus:bg-white focus:border-blue-600'
-                          }`}
-                        />
-                        <User className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        كلمة المرور (Password):
-                      </label>
-                      <div className="relative">
-                        <input
-                          id="modal-login-password"
-                          type={showLoginPassword ? 'text' : 'password'}
-                          value={loginPassword}
-                          onChange={e => setLoginPassword(e.target.value)}
-                          placeholder="••••••"
-                          dir="ltr"
-                          autoComplete="current-password"
-                          required
-                          className={`w-full h-11 pr-10 pl-10 rounded-xl border text-sm font-medium focus:outline-hidden transition text-left ${
-                            isDark
-                              ? 'bg-[#141418] text-white border-neutral-700 focus:border-blue-500'
-                              : 'bg-slate-50 text-slate-900 border-slate-300 focus:bg-white focus:border-blue-600'
-                          }`}
-                        />
-                        <Lock className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        <button
-                          type="button"
-                          onClick={() => setShowLoginPassword(!showLoginPassword)}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
-                        >
-                          {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      id="modal-btn-submit-login"
-                      disabled={isLoggingIn}
-                      className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-sm transition cursor-pointer flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
-                    >
-                      {isLoggingIn ? (
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          <span>تسجيل الدخول</span>
-                          <ArrowLeft className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </form>
-
-                  {/* Fast One-Click Switcher Inside Modal */}
-                  <div className="pt-2 border-t border-slate-200 dark:border-neutral-800 text-right space-y-1.5">
-                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
-                      دخول سريع بنقرة واحدة:
-                    </span>
-                    <div className="grid grid-cols-2 gap-2">
-                      {managerUser && (
-                        <button
-                          type="button"
-                          onClick={() => handleQuickLogin(managerUser.username, managerUser.password)}
-                          className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 font-bold text-xs hover:bg-purple-500/20 transition text-right cursor-pointer"
-                        >
-                          {managerUser.name} (مدير)
-                        </button>
-                      )}
-                      {teacherUsers[0] && (
-                        <button
-                          type="button"
-                          onClick={() => handleQuickLogin(teacherUsers[0].username, teacherUsers[0].password)}
-                          className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold text-xs hover:bg-blue-500/20 transition text-right cursor-pointer"
-                        >
-                          {teacherUsers[0].name} (معلم)
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* REGISTER TAB CONTENT */}
-              {authTab === 'register' && (
-                <div className="space-y-4">
-                  <div className="text-right">
-                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
-                      إنشاء حساب كادر جديد
-                    </h3>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      انضم إلى النظام وسجل حصصك وفصولك المعتمدة
-                    </p>
-                  </div>
-
-                  {regError && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                      <span>{regError}</span>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleRegisterSubmit} className="space-y-3 text-right">
-                    {/* Role Selection */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        نوع الحساب والصلاحية:
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setRegRole('teacher')}
-                          className={`p-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                            regRole === 'teacher'
-                              ? 'bg-blue-600 text-white border-blue-500'
-                              : 'bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-neutral-800'
-                          }`}
-                        >
-                          <GraduationCap className="w-3.5 h-3.5" />
-                          <span>معلم مادة</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setRegRole('manager')}
-                          className={`p-2 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                            regRole === 'manager'
-                              ? 'bg-purple-600 text-white border-purple-500'
-                              : 'bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-neutral-800'
-                          }`}
-                        >
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>إدارة / مشرف</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Full Name */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        الاسم الكامل (مع اللقب):
-                      </label>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  كلمة المرور (Password):
+                </label>
+                <div className="relative">
                       <input
-                        id="reg-name"
-                        type="text"
-                        value={regName}
-                        onChange={e => setRegName(e.target.value)}
-                        placeholder="مثال: أ. أحمد العتيبي"
-                        required
-                        className={`w-full h-10 px-3 rounded-xl border text-xs sm:text-sm font-medium focus:outline-hidden transition ${
-                          isDark
-                            ? 'bg-[#141418] text-white border-neutral-700 focus:border-blue-500'
-                            : 'bg-slate-50 text-slate-900 border-slate-300 focus:bg-white focus:border-blue-600'
-                        }`}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Username */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                          اسم المستخدم:
-                        </label>
-                        <input
-                          id="reg-username"
-                          type="text"
-                          value={regUsername}
-                          onChange={e => setRegUsername(e.target.value)}
-                          placeholder="ahmed"
-                          dir="ltr"
-                          required
-                          className={`w-full h-10 px-3 rounded-xl border text-xs sm:text-sm font-medium focus:outline-hidden transition text-left ${
-                            isDark
-                              ? 'bg-[#141418] text-white border-neutral-700 focus:border-blue-500'
-                              : 'bg-slate-50 text-slate-900 border-slate-300 focus:bg-white focus:border-blue-600'
-                          }`}
-                        />
-                      </div>
-
-                      {/* Password */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                          كلمة المرور:
-                        </label>
-                        <input
-                          id="reg-password"
-                          type="password"
-                          value={regPassword}
-                          onChange={e => setRegPassword(e.target.value)}
-                          placeholder="••••••"
-                          dir="ltr"
-                          required
-                          className={`w-full h-10 px-3 rounded-xl border text-xs sm:text-sm font-medium focus:outline-hidden transition text-left ${
-                            isDark
-                              ? 'bg-[#141418] text-white border-neutral-700 focus:border-blue-500'
-                              : 'bg-slate-50 text-slate-900 border-slate-300 focus:bg-white focus:border-blue-600'
-                          }`}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Subject & Assigned Classes for Teachers */}
-                    {regRole === 'teacher' && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                            المادة الدراسية المسندة:
-                          </label>
-                          <select
-                            value={regSubject}
-                            onChange={e => setRegSubject(e.target.value)}
-                            className={`w-full h-10 px-3 rounded-xl border text-xs sm:text-sm font-medium focus:outline-hidden transition cursor-pointer ${
-                              isDark
-                                ? 'bg-[#141418] text-white border-neutral-700 focus:border-blue-500'
-                                : 'bg-slate-50 text-slate-900 border-slate-300 focus:bg-white focus:border-blue-600'
-                            }`}
-                          >
-                            <option value="رياضيات">رياضيات</option>
-                            <option value="فيزياء">فيزياء</option>
-                            <option value="كيمياء">كيمياء</option>
-                            <option value="أحياء">أحياء</option>
-                            <option value="لغة عربية">لغة عربية</option>
-                            <option value="لغة إنجليزية">لغة إنجليزية</option>
-                            <option value="تربية إسلامية">تربية إسلامية</option>
-                            <option value="حاسب آلي وتقنية">حاسب آلي وتقنية</option>
-                            <option value="تاريخ ودراسات اجتماعية">تاريخ ودراسات اجتماعية</option>
-                            <option value="تربية بدنية">تربية بدنية</option>
-                          </select>
-                        </div>
-
-                        <div className="pt-1">
-                          <AssignedClassesSelector
-                            assignedClasses={regAssignedClasses}
-                            onChange={setRegAssignedClasses}
-                            isDark={isDark}
-                            teacherName={regName}
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {/* Phone (Optional) */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        رقم الهاتف (اختياري للتواصل):
-                      </label>
-                      <input
-                        id="reg-phone"
-                        type="tel"
-                        value={regPhone}
-                        onChange={e => setRegPhone(e.target.value)}
-                        placeholder="05XXXXXXXX"
+                    id="modal-login-password"
+                    type={showLoginPassword ? 'text' : 'password'}
+                    value={loginPassword}
+                    onChange={e => setLoginPassword(e.target.value)}
+                    placeholder="••••••"
                         dir="ltr"
-                        className={`w-full h-10 px-3 rounded-xl border text-xs sm:text-sm font-medium focus:outline-hidden transition text-left ${
+                    autoComplete="current-password"
+                    required
+                    className={`w-full h-11 pr-10 pl-10 rounded-xl border text-sm font-medium focus:outline-hidden transition text-left ${
                           isDark
                             ? 'bg-[#141418] text-white border-neutral-700 focus:border-blue-500'
                             : 'bg-slate-50 text-slate-900 border-slate-300 focus:bg-white focus:border-blue-600'
                         }`}
                       />
+                  <Lock className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  >
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                     </div>
+              </div>
 
-                    <button
-                      type="submit"
-                      id="modal-btn-submit-register"
-                      disabled={isRegistering}
-                      className="w-full h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-sm transition cursor-pointer flex items-center justify-center gap-2 shadow-md disabled:opacity-50 mt-2"
-                    >
-                      {isRegistering ? (
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          <span>إنشاء الحساب ودخول المنصة</span>
-                          <Check className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </form>
+              <button
+                type="submit"
+                id="modal-btn-submit-login"
+                disabled={isLoggingIn}
+                className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-sm transition cursor-pointer flex items-center justify-center gap-2 shadow-md disabled:opacity-50"
+              >
+                {isLoggingIn ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span>تسجيل الدخول للمنظومة</span>
+                    <ArrowLeft className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Fast One-Click Switcher Inside Modal */}
+            <div className="pt-2 border-t border-slate-200 dark:border-neutral-800 text-right space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                دخول سريع بنقرة واحدة:
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {managerUser && (
+                  <button
+                    type="button"
+                    onClick={() => handleQuickLogin(managerUser.username, managerUser.password)}
+                    className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 font-bold text-xs hover:bg-purple-500/20 transition text-right cursor-pointer"
+                  >
+                    {managerUser.name} (مدير)
+                  </button>
+                )}
+                {teacherUsers[0] && (
+                  <button
+                    type="button"
+                    onClick={() => handleQuickLogin(teacherUsers[0].username, teacherUsers[0].password)}
+                    className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold text-xs hover:bg-blue-500/20 transition text-right cursor-pointer"
+                  >
+                    {teacherUsers[0].name} (معلم)
+                  </button>
+                )}
+              </div>
                 </div>
-              )}
+          </div>
             </motion.div>
           </div>
         )}

@@ -36,6 +36,7 @@ export const TodaysAttendanceView: React.FC = () => {
     setActiveTab,
     currentUser,
     submittedSessions,
+    canUserEditAttendance,
   } = useAttendance();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,22 +238,35 @@ export const TodaysAttendanceView: React.FC = () => {
                   {meta?.submittedTeacherName ? `المعلم: ${meta.submittedTeacherName}` : `رائد الفصل: ${cls.homeroomTeacher}`}
                 </span>
 
-                <button
-                  type="button"
-                  onClick={e => {
-                    e.stopPropagation();
-                    setSelectedClassId(cls.id);
-                    setActiveTab('take_attendance');
-                  }}
-                  className={`h-8 px-3 rounded-xl font-bold transition cursor-pointer flex items-center gap-1 ${
-                    isSubmitted
-                      ? 'bg-emerald-700 hover:bg-emerald-600 text-white'
-                      : 'bg-blue-900 hover:bg-blue-800 text-white'
-                  }`}
-                >
-                  <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>{isSubmitted ? 'عرض / تعديل' : 'رصد الحضور'}</span>
-                </button>
+                {(() => {
+                  const canEdit = canUserEditAttendance(cls.id, selectedPeriod);
+                  return (
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setSelectedClassId(cls.id);
+                        setActiveTab('take_attendance');
+                      }}
+                      className={`h-8 px-3 rounded-xl font-bold transition cursor-pointer flex items-center gap-1 ${
+                        canEdit.allowed
+                          ? isSubmitted
+                            ? 'bg-emerald-700 hover:bg-emerald-600 text-white'
+                            : 'bg-blue-900 hover:bg-blue-800 text-white'
+                          : 'bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-700'
+                      }`}
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>
+                        {canEdit.allowed
+                          ? isSubmitted
+                            ? 'عرض / تعديل'
+                            : 'رصد الحضور'
+                          : 'معاينة (مشاهدة)'}
+                      </span>
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           );
@@ -279,17 +293,26 @@ export const TodaysAttendanceView: React.FC = () => {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedClassId(activeSelectedClass.id);
-                setActiveTab('take_attendance');
-              }}
-              className="h-10 px-4 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm rounded-xl transition cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-xs"
-            >
-              <Edit2 className="w-4 h-4 text-emerald-300" />
-              <span>تعديل كشف حضور هذا الفصل</span>
-            </button>
+            {(() => {
+              const activeCanEdit = canUserEditAttendance(activeSelectedClass.id, selectedPeriod);
+              return activeCanEdit.allowed ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedClassId(activeSelectedClass.id);
+                    setActiveTab('take_attendance');
+                  }}
+                  className="h-10 px-4 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm rounded-xl transition cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-xs"
+                >
+                  <Edit2 className="w-4 h-4 text-emerald-300" />
+                  <span>تعديل كشف حضور هذا الفصل</span>
+                </button>
+              ) : (
+                <span className="px-3 py-1.5 bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl border border-slate-200 dark:border-neutral-700">
+                  🔒 وضع المشاهدة فقط (التعديل بإذن المدير)
+                </span>
+              );
+            })()}
           </div>
 
           {/* Student Roster Table */}

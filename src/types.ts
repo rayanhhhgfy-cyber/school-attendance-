@@ -84,6 +84,14 @@ export interface TimetableSlot {
   substituteTeacherName?: string;
 }
 
+export interface TeacherPermissions {
+  canAddClasses?: boolean;
+  canAddStudents?: boolean;
+  canAddTeachers?: boolean;
+  canAssignSubstitutes?: boolean;
+  canEditAnyAttendance?: boolean;
+}
+
 export interface UserAccount {
   id: string;
   username: string;
@@ -94,6 +102,7 @@ export interface UserAccount {
   assignedClasses?: string[];
   phone?: string;
   subject?: string;
+  permissions?: TeacherPermissions;
 }
 
 export interface PeriodTimingConfig {
