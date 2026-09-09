@@ -87,9 +87,30 @@ export interface TimetableSlot {
 export interface TeacherPermissions {
   canAddClasses?: boolean;
   canAddStudents?: boolean;
+  canDeleteStudents?: boolean;
+  canEditStudents?: boolean;
   canAddTeachers?: boolean;
+  canEditTeachers?: boolean;
+  canDeleteTeachers?: boolean;
   canAssignSubstitutes?: boolean;
+  canRemoveSubstitutes?: boolean;
   canEditAnyAttendance?: boolean;
+  canReopenAttendance?: boolean;
+  canExportExcel?: boolean;
+  canExportPdf?: boolean;
+  canUploadExcuses?: boolean;
+  canDeleteExcuses?: boolean;
+  canManageTimetable?: boolean;
+  canEditPeriodTimings?: boolean;
+  canConfigureDeadlines?: boolean;
+  canBroadcastNotifications?: boolean;
+  canToggleEmergencyLockdown?: boolean;
+  canViewAllReports?: boolean;
+  canManageSchoolSettings?: boolean;
+  canEditClassRooms?: boolean;
+  canResetAttendance?: boolean;
+  canSendParentSms?: boolean;
+  canConfigureRequiredAttendancePeriods?: boolean;
 }
 
 export interface UserAccount {
