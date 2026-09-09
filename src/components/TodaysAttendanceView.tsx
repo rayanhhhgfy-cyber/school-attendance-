@@ -338,7 +338,7 @@ export const TodaysAttendanceView: React.FC = () => {
                       </td>
                       <td className="p-3">
                         <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                          ✓ حاضر (معتمد)
+                          ✓ حاضر
                         </span>
                       </td>
                       <td className="p-3 text-slate-600 dark:text-slate-400 font-mono" dir="ltr">
