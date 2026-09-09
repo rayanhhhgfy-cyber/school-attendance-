@@ -20,6 +20,7 @@ import { EmergencyLockdownModal } from './components/EmergencyLockdownModal';
 import { BurgerMenuDrawer } from './components/BurgerMenuDrawer';
 import { LoginModal } from './components/LoginModal';
 import { LoginPage } from './components/LoginPage';
+import { OnboardingModal } from './components/OnboardingModal';
 
 const AppContent: React.FC = () => {
   const { activeTab, currentUser } = useAttendance();
@@ -80,6 +81,9 @@ const AppContent: React.FC = () => {
         onOpenEmergencyModal={() => setIsEmergencyOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
       />
+
+      {/* Application Onboarding Tour */}
+      <OnboardingModal />
 
       {/* Application Modals */}
       <NotificationModal isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />

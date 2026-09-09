@@ -179,7 +179,16 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     return INITIAL_USERS;
   });
 
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'current_user');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.id) return parsed;
+      } catch {}
+    }
+    return null;
+  });
 
   // Period Timings
   const [periodTimings, setPeriodTimings] = useState<PeriodTimingConfig[]>(() => {
@@ -322,7 +331,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const [theme, setThemeState] = useState<AppTheme>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'theme');
     if (saved === 'dark' || saved === 'light') return saved;
-    return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'light';
   });
 
   const setTheme = (newTheme: AppTheme) => {
@@ -1186,8 +1195,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       }
     }
 
-    if (currentUser.role === 'manager') {
-      // Manager has unrestricted access across all classes & periods
+    if (currentUser.role === 'manager' || currentUser.permissions?.canEditAnyAttendance) {
+      // Manager or teacher with granted permission has unrestricted access across all classes & periods
       return { allowed: true };
     }
 

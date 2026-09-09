@@ -53,7 +53,9 @@ export const ManagerControlCenter: React.FC = () => {
     deleteStudent,
     currentUser,
     timetable,
+    addTimetableSlot,
     updateTimetableSlot,
+    deleteTimetableSlot,
     setSelectedClassId,
     setSelectedPeriod,
     setActiveTab,
@@ -89,6 +91,11 @@ export const ManagerControlCenter: React.FC = () => {
     subject: '',
     phone: '',
     assignedClasses: [] as string[],
+    canAddClasses: false,
+    canAddStudents: false,
+    canAddTeachers: false,
+    canAssignSubstitutes: false,
+    canEditAnyAttendance: false,
   });
 
   // Class modal state
@@ -125,6 +132,11 @@ export const ManagerControlCenter: React.FC = () => {
       subject: 'اللغة العربية والمهارات اللغوية',
       phone: '05' + Math.floor(10000000 + Math.random() * 90000000),
       assignedClasses: [classes[0]?.id || 'class-9th'],
+      canAddClasses: false,
+      canAddStudents: true,
+      canAddTeachers: false,
+      canAssignSubstitutes: false,
+      canEditAnyAttendance: false,
     });
     setShowUserModal(true);
   };
@@ -140,6 +152,11 @@ export const ManagerControlCenter: React.FC = () => {
       subject: user.subject || '',
       phone: user.phone || '',
       assignedClasses: user.assignedClasses || [],
+      canAddClasses: !!user.permissions?.canAddClasses,
+      canAddStudents: !!user.permissions?.canAddStudents,
+      canAddTeachers: !!user.permissions?.canAddTeachers,
+      canAssignSubstitutes: !!user.permissions?.canAssignSubstitutes,
+      canEditAnyAttendance: !!user.permissions?.canEditAnyAttendance,
     });
     setShowUserModal(true);
   };
@@ -147,6 +164,14 @@ export const ManagerControlCenter: React.FC = () => {
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!userForm.username.trim() || !userForm.password || !userForm.name.trim()) return;
+
+    const permissions = {
+      canAddClasses: userForm.canAddClasses,
+      canAddStudents: userForm.canAddStudents,
+      canAddTeachers: userForm.canAddTeachers,
+      canAssignSubstitutes: userForm.canAssignSubstitutes,
+      canEditAnyAttendance: userForm.canEditAnyAttendance,
+    };
 
     if (editingUserId) {
       updateUserAccount(editingUserId, {
@@ -157,6 +182,7 @@ export const ManagerControlCenter: React.FC = () => {
         subject: userForm.subject,
         phone: userForm.phone,
         assignedClasses: userForm.assignedClasses,
+        permissions,
       });
     } else {
       addUserAccount({
@@ -168,6 +194,7 @@ export const ManagerControlCenter: React.FC = () => {
         phone: userForm.phone,
         teacherId: 'staff-' + Math.floor(10 + Math.random() * 90),
         assignedClasses: userForm.assignedClasses,
+        permissions,
       });
     }
     setShowUserModal(false);
@@ -493,12 +520,34 @@ export const ManagerControlCenter: React.FC = () => {
             <div>
               <h3 className="text-base font-extrabold text-blue-950 dark:text-blue-200 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <span>جدول حصص المعلمين والفصول المسندة لكل معلم</span>
+                <span>إدارة وتعديل جدول حصص المعلمين والفصول</span>
               </h3>
               <p className="text-xs text-blue-800 dark:text-blue-300 mt-0.5">
-                معاينة شاملة لكافة معلمي المدرسة، الفصول المعتمدة لكل معلم، وجدول حصصهم اليومي والأسبوعي.
+                يمكنك كمدير المدرسة إضافة، تعديل، أو حذف حصص الجدول الأسبوعي لكل معلم مباشرة.
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                const firstTeacher = users.find(u => u.role === 'teacher');
+                const firstClass = classes[0];
+                if (firstTeacher && firstClass) {
+                  addTimetableSlot({
+                    teacherId: firstTeacher.teacherId || firstTeacher.id,
+                    teacherName: firstTeacher.name,
+                    classId: firstClass.id,
+                    className: firstClass.name,
+                    subject: firstTeacher.subject || 'مادة دراسية',
+                    day: 'الأحد',
+                    periodNumber: 1,
+                  });
+                }
+              }}
+              className="h-9 px-4 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة حصة جديدة لجدول معلم</span>
+            </button>
           </div>
 
           <div className="space-y-4">
@@ -570,14 +619,46 @@ export const ManagerControlCenter: React.FC = () => {
                               daySlots.map(slot => (
                                 <div
                                   key={slot.id}
-                                  className="p-1.5 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900/50 flex items-center justify-between"
+                                  className="p-1.5 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900/50 flex items-center justify-between gap-1 group"
                                 >
-                                  <span className="font-bold text-blue-900 dark:text-blue-300">
-                                    الحصة {slot.periodNumber}
-                                  </span>
-                                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                                    {slot.className}
-                                  </span>
+                                  <div>
+                                    <span className="font-bold text-blue-900 dark:text-blue-300 block">
+                                      الحصة {slot.periodNumber} • {slot.subject}
+                                    </span>
+                                    <span className="font-semibold text-slate-700 dark:text-slate-300 text-[10px]">
+                                      {slot.className}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-0.5 opacity-80 group-hover:opacity-100">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newPeriod = prompt('أدخل رقم الحصة الجديد (1-7):', slot.periodNumber.toString());
+                                        if (newPeriod) {
+                                          const pNum = parseInt(newPeriod, 10);
+                                          if (!isNaN(pNum) && pNum >= 1 && pNum <= 7) {
+                                            updateTimetableSlot(slot.id, { periodNumber: pNum });
+                                          }
+                                        }
+                                      }}
+                                      title="تغيير الحصة"
+                                      className="p-1 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-neutral-800 rounded cursor-pointer"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (confirm(`هل أنت متأكد من حذف الحصة ${slot.periodNumber} (${slot.className})؟`)) {
+                                          deleteTimetableSlot(slot.id);
+                                        }
+                                      }}
+                                      title="حذف الحصة"
+                                      className="p-1 text-red-600 hover:bg-red-100 rounded cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
                                 </div>
                               ))
                             )}
@@ -625,6 +706,7 @@ export const ManagerControlCenter: React.FC = () => {
                   <th className="p-3">الصلاحية</th>
                   <th className="p-3">المادة / التخصص</th>
                   <th className="p-3">الفصول المسندة</th>
+                  <th className="p-3">الصلاحيات المتاحة / الممنوحة</th>
                   <th className="p-3 text-center">إجراءات</th>
                 </tr>
               </thead>
@@ -687,6 +769,80 @@ export const ManagerControlCenter: React.FC = () => {
                         </div>
                       ) : (
                         <span className="text-slate-400">كافة الفصول (مدير)</span>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {u.role === 'manager' ? (
+                        <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-1 rounded-md">
+                          شاملة لجميع الوظائف
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1 text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = !!u.permissions?.canAddClasses;
+                              updateUserAccount(u.id, {
+                                permissions: { ...u.permissions, canAddClasses: !curr },
+                              });
+                            }}
+                            className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition border ${
+                              u.permissions?.canAddClasses
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : 'bg-slate-100 text-slate-500 border-slate-200 line-through'
+                            }`}
+                          >
+                            إضافة فصول
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = !!u.permissions?.canAddStudents;
+                              updateUserAccount(u.id, {
+                                permissions: { ...u.permissions, canAddStudents: !curr },
+                              });
+                            }}
+                            className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition border ${
+                              u.permissions?.canAddStudents
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : 'bg-slate-100 text-slate-500 border-slate-200 line-through'
+                            }`}
+                          >
+                            إضافة طلاب
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = !!u.permissions?.canAssignSubstitutes;
+                              updateUserAccount(u.id, {
+                                permissions: { ...u.permissions, canAssignSubstitutes: !curr },
+                              });
+                            }}
+                            className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition border ${
+                              u.permissions?.canAssignSubstitutes
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : 'bg-slate-100 text-slate-500 border-slate-200 line-through'
+                            }`}
+                          >
+                            تعيين بديل
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = !!u.permissions?.canEditAnyAttendance;
+                              updateUserAccount(u.id, {
+                                permissions: { ...u.permissions, canEditAnyAttendance: !curr },
+                              });
+                            }}
+                            className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition border ${
+                              u.permissions?.canEditAnyAttendance
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : 'bg-slate-100 text-slate-500 border-slate-200 line-through'
+                            }`}
+                          >
+                            رصد عام
+                          </button>
+                        </div>
                       )}
                     </td>
                     <td className="p-3 text-center">
@@ -1197,6 +1353,57 @@ export const ManagerControlCenter: React.FC = () => {
                   teacherName={userForm.name}
                 />
               </div>
+
+              {/* Granular Permissions Controls */}
+              {userForm.role === 'teacher' && (
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-900/60 space-y-2 text-xs">
+                  <span className="font-bold text-purple-950 dark:text-purple-200 block">
+                    تخصيص الصلاحيات الإضافية للمعلم (إتاحة / سحب الصلاحيات):
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={userForm.canAddClasses}
+                        onChange={e => setUserForm(prev => ({ ...prev, canAddClasses: e.target.checked }))}
+                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
+                      />
+                      <span>إضافة فصول دراسية</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={userForm.canAddStudents}
+                        onChange={e => setUserForm(prev => ({ ...prev, canAddStudents: e.target.checked }))}
+                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
+                      />
+                      <span>إضافة وتسجيل طلاب</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={userForm.canAssignSubstitutes}
+                        onChange={e => setUserForm(prev => ({ ...prev, canAssignSubstitutes: e.target.checked }))}
+                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
+                      />
+                      <span>تكليف معلم بديل</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={userForm.canEditAnyAttendance}
+                        onChange={e => setUserForm(prev => ({ ...prev, canEditAnyAttendance: e.target.checked }))}
+                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
+                      />
+                      <span>تعديل حضور كافة الفصول</span>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
