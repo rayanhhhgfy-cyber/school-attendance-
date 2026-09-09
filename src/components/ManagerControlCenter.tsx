@@ -93,9 +93,30 @@ export const ManagerControlCenter: React.FC = () => {
     assignedClasses: [] as string[],
     canAddClasses: false,
     canAddStudents: false,
+    canDeleteStudents: false,
+    canEditStudents: false,
     canAddTeachers: false,
+    canEditTeachers: false,
+    canDeleteTeachers: false,
     canAssignSubstitutes: false,
+    canRemoveSubstitutes: false,
     canEditAnyAttendance: false,
+    canReopenAttendance: false,
+    canExportExcel: false,
+    canExportPdf: false,
+    canUploadExcuses: false,
+    canDeleteExcuses: false,
+    canManageTimetable: false,
+    canEditPeriodTimings: false,
+    canConfigureDeadlines: false,
+    canBroadcastNotifications: false,
+    canToggleEmergencyLockdown: false,
+    canViewAllReports: false,
+    canManageSchoolSettings: false,
+    canEditClassRooms: false,
+    canResetAttendance: false,
+    canSendParentSms: false,
+    canConfigureRequiredAttendancePeriods: false,
   });
 
   // Class modal state
@@ -134,9 +155,30 @@ export const ManagerControlCenter: React.FC = () => {
       assignedClasses: [classes[0]?.id || 'class-9th'],
       canAddClasses: false,
       canAddStudents: true,
+      canDeleteStudents: false,
+      canEditStudents: false,
       canAddTeachers: false,
+      canEditTeachers: false,
+      canDeleteTeachers: false,
       canAssignSubstitutes: false,
+      canRemoveSubstitutes: false,
       canEditAnyAttendance: false,
+      canReopenAttendance: false,
+      canExportExcel: false,
+      canExportPdf: false,
+      canUploadExcuses: false,
+      canDeleteExcuses: false,
+      canManageTimetable: false,
+      canEditPeriodTimings: false,
+      canConfigureDeadlines: false,
+      canBroadcastNotifications: false,
+      canToggleEmergencyLockdown: false,
+      canViewAllReports: false,
+      canManageSchoolSettings: false,
+      canEditClassRooms: false,
+      canResetAttendance: false,
+      canSendParentSms: false,
+      canConfigureRequiredAttendancePeriods: false,
     });
     setShowUserModal(true);
   };
@@ -154,9 +196,30 @@ export const ManagerControlCenter: React.FC = () => {
       assignedClasses: user.assignedClasses || [],
       canAddClasses: !!user.permissions?.canAddClasses,
       canAddStudents: !!user.permissions?.canAddStudents,
+      canDeleteStudents: !!user.permissions?.canDeleteStudents,
+      canEditStudents: !!user.permissions?.canEditStudents,
       canAddTeachers: !!user.permissions?.canAddTeachers,
+      canEditTeachers: !!user.permissions?.canEditTeachers,
+      canDeleteTeachers: !!user.permissions?.canDeleteTeachers,
       canAssignSubstitutes: !!user.permissions?.canAssignSubstitutes,
+      canRemoveSubstitutes: !!user.permissions?.canRemoveSubstitutes,
       canEditAnyAttendance: !!user.permissions?.canEditAnyAttendance,
+      canReopenAttendance: !!user.permissions?.canReopenAttendance,
+      canExportExcel: !!user.permissions?.canExportExcel,
+      canExportPdf: !!user.permissions?.canExportPdf,
+      canUploadExcuses: !!user.permissions?.canUploadExcuses,
+      canDeleteExcuses: !!user.permissions?.canDeleteExcuses,
+      canManageTimetable: !!user.permissions?.canManageTimetable,
+      canEditPeriodTimings: !!user.permissions?.canEditPeriodTimings,
+      canConfigureDeadlines: !!user.permissions?.canConfigureDeadlines,
+      canBroadcastNotifications: !!user.permissions?.canBroadcastNotifications,
+      canToggleEmergencyLockdown: !!user.permissions?.canToggleEmergencyLockdown,
+      canViewAllReports: !!user.permissions?.canViewAllReports,
+      canManageSchoolSettings: !!user.permissions?.canManageSchoolSettings,
+      canEditClassRooms: !!user.permissions?.canEditClassRooms,
+      canResetAttendance: !!user.permissions?.canResetAttendance,
+      canSendParentSms: !!user.permissions?.canSendParentSms,
+      canConfigureRequiredAttendancePeriods: !!user.permissions?.canConfigureRequiredAttendancePeriods,
     });
     setShowUserModal(true);
   };
@@ -168,9 +231,30 @@ export const ManagerControlCenter: React.FC = () => {
     const permissions = {
       canAddClasses: userForm.canAddClasses,
       canAddStudents: userForm.canAddStudents,
+      canDeleteStudents: userForm.canDeleteStudents,
+      canEditStudents: userForm.canEditStudents,
       canAddTeachers: userForm.canAddTeachers,
+      canEditTeachers: userForm.canEditTeachers,
+      canDeleteTeachers: userForm.canDeleteTeachers,
       canAssignSubstitutes: userForm.canAssignSubstitutes,
+      canRemoveSubstitutes: userForm.canRemoveSubstitutes,
       canEditAnyAttendance: userForm.canEditAnyAttendance,
+      canReopenAttendance: userForm.canReopenAttendance,
+      canExportExcel: userForm.canExportExcel,
+      canExportPdf: userForm.canExportPdf,
+      canUploadExcuses: userForm.canUploadExcuses,
+      canDeleteExcuses: userForm.canDeleteExcuses,
+      canManageTimetable: userForm.canManageTimetable,
+      canEditPeriodTimings: userForm.canEditPeriodTimings,
+      canConfigureDeadlines: userForm.canConfigureDeadlines,
+      canBroadcastNotifications: userForm.canBroadcastNotifications,
+      canToggleEmergencyLockdown: userForm.canToggleEmergencyLockdown,
+      canViewAllReports: userForm.canViewAllReports,
+      canManageSchoolSettings: userForm.canManageSchoolSettings,
+      canEditClassRooms: userForm.canEditClassRooms,
+      canResetAttendance: userForm.canResetAttendance,
+      canSendParentSms: userForm.canSendParentSms,
+      canConfigureRequiredAttendancePeriods: userForm.canConfigureRequiredAttendancePeriods,
     };
 
     if (editingUserId) {
@@ -340,6 +424,105 @@ export const ManagerControlCenter: React.FC = () => {
       {/* SECTION: MANAGER DEADLINE & ADVANCED CONTROLS */}
       {activeSection === 'manager_controls' && (
         <div className="space-y-4">
+          {/* Required Periods Manager Configuration & Notification Dispatch */}
+          <div className="p-5 bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-2xl border border-blue-800 shadow-md space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-blue-800/80 pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-amber-300 animate-bounce" />
+                  <span>تحديد وتكليف الحصص الدراسية المطلوبة لرصد الحضور إجبارياً</span>
+                </h3>
+                <p className="text-xs text-blue-200 mt-1 leading-relaxed">
+                  يمكن للمدير تحديد الحصص (مثلاً: الحصة الأولى والخامسة) والفصول المطلوبة، وسيقوم النظام فوراً بإرسال إشعارات منبثقة لمعلمي تلك الحصص للتنبيه برصد الحضور.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  // Select All Periods 1-7 for all classes and notify
+                  [1, 2, 3, 4, 5, 6, 7].forEach(pNum => {
+                    addNotification(
+                      `تنبيه إداري عاجل: رصد إجباري للحصة ${pNum}`,
+                      `يرجى من جميع معلمي الحصة (${pNum}) رصد الحضور والغياب فوراً وبشكل إجباري بقرار من إدارة المدرسة.`,
+                      'warning'
+                    );
+                  });
+                  alert('تم تحديد كافة الحصص وإرسال إشعارات التكليف الفورية لجميع معلمي المواد!');
+                }}
+                className="h-10 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition cursor-pointer shrink-0"
+              >
+                <Check className="w-4 h-4 text-slate-950" />
+                <span>تحديد إجباري لكافة الحصص (1-7) وبث التنبيه</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-2">
+                <span className="font-bold text-amber-200 block">
+                  1. اختر الحصص الدراسية المطلوب رصدها:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7].map(pNum => (
+                    <button
+                      key={pNum}
+                      type="button"
+                      onClick={() => {
+                        addNotification(
+                          `تنبيه رصد الحصة ${pNum}`,
+                          `قرار إداري: الحصة رقم (${pNum}) مطلوبة إجبارياً للرصد اليوم. يرجى فتح كشف الفصل ورصد الحضور الآن.`,
+                          'reminder'
+                        );
+                        alert(`تم تكليف وإرسال إشعار رصد الحصة ${pNum} بنجاح!`);
+                      }}
+                      className="px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl font-bold text-white transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Clock className="w-3.5 h-3.5 text-amber-300" />
+                      <span>الحصة {pNum}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="font-bold text-amber-200 block">
+                  2. توجيه إشعار مخصص لمعلمي مادة أو فصل محدد:
+                </span>
+                <div className="flex items-center gap-2">
+                  <select
+                    id="select-required-class-notif"
+                    className="flex-1 h-10 px-3 bg-white/10 border border-white/20 rounded-xl text-xs font-bold text-white cursor-pointer"
+                  >
+                    <option value="all" className="text-slate-900">كافة الفصول المدرسية</option>
+                    {classes.map(c => (
+                      <option key={c.id} value={c.id} className="text-slate-900">{c.name}</option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sel = document.getElementById('select-required-class-notif') as HTMLSelectElement;
+                      const classId = sel?.value || 'all';
+                      const clsObj = classes.find(c => c.id === classId);
+                      const clsName = clsObj ? clsObj.name : 'كافة الفصول';
+
+                      addNotification(
+                        `توجيه إداري: رصد حضور (${clsName})`,
+                        `تنبيه من إدارة المدرسة لمعلمي (${clsName}): يرجى التأكد من إنهاء ورصد كشف الحضور للحصص المتبقية فوراً.`,
+                        'reminder',
+                        classId !== 'all' ? classId : undefined
+                      );
+                      alert(`تم بث إشعار التكليف الخاص بـ (${clsName}) بنجاح!`);
+                    }}
+                    className="h-10 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs transition cursor-pointer shrink-0"
+                  >
+                    إرسال التكليف
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           {/* Deadline Cutoff Configuration */}
           <div className="p-5 bg-slate-50 dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 space-y-4">
             <div className="flex items-start justify-between gap-2 border-b border-slate-200 dark:border-neutral-800 pb-3">
@@ -1354,53 +1537,130 @@ export const ManagerControlCenter: React.FC = () => {
                 />
               </div>
 
-              {/* Granular Permissions Controls */}
+              {/* Granular Permissions Controls (26 Options + Select All) */}
               {userForm.role === 'teacher' && (
-                <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-900/60 space-y-2 text-xs">
-                  <span className="font-bold text-purple-950 dark:text-purple-200 block">
-                    تخصيص الصلاحيات الإضافية للمعلم (إتاحة / سحب الصلاحيات):
-                  </span>
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-900/60 space-y-2 text-xs max-h-60 overflow-y-auto">
+                  <div className="flex items-center justify-between border-b border-purple-200 dark:border-purple-900/60 pb-1.5">
+                    <span className="font-bold text-purple-950 dark:text-purple-200 block">
+                      تخصيص الصلاحيات الإضافية للمعلم (26 صلاحية):
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setUserForm(prev => ({
+                            ...prev,
+                            canAddClasses: true,
+                            canAddStudents: true,
+                            canDeleteStudents: true,
+                            canEditStudents: true,
+                            canAddTeachers: true,
+                            canEditTeachers: true,
+                            canDeleteTeachers: true,
+                            canAssignSubstitutes: true,
+                            canRemoveSubstitutes: true,
+                            canEditAnyAttendance: true,
+                            canReopenAttendance: true,
+                            canExportExcel: true,
+                            canExportPdf: true,
+                            canUploadExcuses: true,
+                            canDeleteExcuses: true,
+                            canManageTimetable: true,
+                            canEditPeriodTimings: true,
+                            canConfigureDeadlines: true,
+                            canBroadcastNotifications: true,
+                            canToggleEmergencyLockdown: true,
+                            canViewAllReports: true,
+                            canManageSchoolSettings: true,
+                            canEditClassRooms: true,
+                            canResetAttendance: true,
+                            canSendParentSms: true,
+                            canConfigureRequiredAttendancePeriods: true,
+                          }))
+                        }
+                        className="px-2 py-0.5 bg-purple-900 text-white rounded text-[10px] font-bold cursor-pointer"
+                      >
+                        تحديد الكل
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setUserForm(prev => ({
+                            ...prev,
+                            canAddClasses: false,
+                            canAddStudents: false,
+                            canDeleteStudents: false,
+                            canEditStudents: false,
+                            canAddTeachers: false,
+                            canEditTeachers: false,
+                            canDeleteTeachers: false,
+                            canAssignSubstitutes: false,
+                            canRemoveSubstitutes: false,
+                            canEditAnyAttendance: false,
+                            canReopenAttendance: false,
+                            canExportExcel: false,
+                            canExportPdf: false,
+                            canUploadExcuses: false,
+                            canDeleteExcuses: false,
+                            canManageTimetable: false,
+                            canEditPeriodTimings: false,
+                            canConfigureDeadlines: false,
+                            canBroadcastNotifications: false,
+                            canToggleEmergencyLockdown: false,
+                            canViewAllReports: false,
+                            canManageSchoolSettings: false,
+                            canEditClassRooms: false,
+                            canResetAttendance: false,
+                            canSendParentSms: false,
+                            canConfigureRequiredAttendancePeriods: false,
+                          }))
+                        }
+                        className="px-2 py-0.5 bg-slate-200 text-slate-800 rounded text-[10px] font-bold cursor-pointer"
+                      >
+                        إلغاء الكل
+                      </button>
+                    </div>
+                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={userForm.canAddClasses}
-                        onChange={e => setUserForm(prev => ({ ...prev, canAddClasses: e.target.checked }))}
-                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
-                      />
-                      <span>إضافة فصول دراسية</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={userForm.canAddStudents}
-                        onChange={e => setUserForm(prev => ({ ...prev, canAddStudents: e.target.checked }))}
-                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
-                      />
-                      <span>إضافة وتسجيل طلاب</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={userForm.canAssignSubstitutes}
-                        onChange={e => setUserForm(prev => ({ ...prev, canAssignSubstitutes: e.target.checked }))}
-                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
-                      />
-                      <span>تكليف معلم بديل</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={userForm.canEditAnyAttendance}
-                        onChange={e => setUserForm(prev => ({ ...prev, canEditAnyAttendance: e.target.checked }))}
-                        className="w-4 h-4 rounded text-purple-600 cursor-pointer"
-                      />
-                      <span>تعديل حضور كافة الفصول</span>
-                    </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {[
+                      { key: 'canAddClasses', label: '1. إضافة فصول دراسية' },
+                      { key: 'canAddStudents', label: '2. إضافة وتسجيل طلاب' },
+                      { key: 'canEditStudents', label: '3. تعديل بيانات الطلاب' },
+                      { key: 'canDeleteStudents', label: '4. حذف الطلاب' },
+                      { key: 'canAddTeachers', label: '5. إضافة حسابات معلمين' },
+                      { key: 'canEditTeachers', label: '6. تعديل بيانات المعلمين' },
+                      { key: 'canDeleteTeachers', label: '7. حذف حسابات المعلمين' },
+                      { key: 'canAssignSubstitutes', label: '8. تكليف معلم بديل' },
+                      { key: 'canRemoveSubstitutes', label: '9. إلغاء تكليف المعلم البديل' },
+                      { key: 'canEditAnyAttendance', label: '10. تعديل حضور كافة الفصول' },
+                      { key: 'canReopenAttendance', label: '11. إعادة فتح الكشوف المقفلة' },
+                      { key: 'canExportExcel', label: '12. تصدير التقارير بملف Excel' },
+                      { key: 'canExportPdf', label: '13. طباعة وتصدير كشوفات PDF' },
+                      { key: 'canUploadExcuses', label: '14. رفع وإرفاق الأعذار الطبية' },
+                      { key: 'canDeleteExcuses', label: '15. حذف الأعذار المرفقة' },
+                      { key: 'canManageTimetable', label: '16. تعديل جدول الحصص الأسبوعي' },
+                      { key: 'canEditPeriodTimings', label: '17. ضبط مواعيد بداية ونهاية الحصص' },
+                      { key: 'canConfigureDeadlines', label: '18. تحديد الموعد النهائي اليومي' },
+                      { key: 'canBroadcastNotifications', label: '19. إرسال بث إشعارات عام' },
+                      { key: 'canToggleEmergencyLockdown', label: '20. تفعيل وتجاوز إغلاق الطوارئ' },
+                      { key: 'canViewAllReports', label: '21. معاينة التقارير الشاملة' },
+                      { key: 'canManageSchoolSettings', label: '22. تعديل إعدادات اسم المدرسة' },
+                      { key: 'canEditClassRooms', label: '23. تعديل قاعات وفصول المدرسة' },
+                      { key: 'canResetAttendance', label: '24. إعادة ضبط جلسة الحضور' },
+                      { key: 'canSendParentSms', label: '25. إرسال رسائل SMS لأولياء الأمور' },
+                      { key: 'canConfigureRequiredAttendancePeriods', label: '26. تحديد الحصص الواجب رصدها إجبارياً' },
+                    ].map(item => (
+                      <label key={item.key} className="flex items-center gap-2 cursor-pointer font-medium text-slate-800 dark:text-slate-200">
+                        <input
+                          type="checkbox"
+                          checked={!!(userForm as any)[item.key]}
+                          onChange={e => setUserForm(prev => ({ ...prev, [item.key]: e.target.checked }))}
+                          className="w-4 h-4 rounded text-purple-600 cursor-pointer"
+                        />
+                        <span>{item.label}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
               )}

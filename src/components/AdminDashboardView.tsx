@@ -125,16 +125,6 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onOpenEm
             <span>تصدير Excel للوزارة</span>
           </button>
 
-          {/* Print PDF Report Button */}
-          <button
-            id="btn-print-report"
-            type="button"
-            onClick={handlePrint}
-            className="h-10 px-3.5 bg-blue-900 hover:bg-blue-800 text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span>طباعة كشف PDF بختم المدرسة</span>
-          </button>
         </div>
       </div>
 
