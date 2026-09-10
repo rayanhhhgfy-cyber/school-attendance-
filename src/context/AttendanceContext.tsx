@@ -19,6 +19,7 @@ import {
   AppTheme,
   MedicalExcuse,
 } from '../types';
+/// <reference types="vite/client" />
 import { soundFx } from '../utils/audio';
 
 export interface SessionMeta {
@@ -149,7 +150,7 @@ interface AttendanceContextType {
 const AttendanceContext = createContext<AttendanceContextType | null>(null);
 
 const STORAGE_KEY_PREFIX = 'school_att_';
-const API_BASE_URL = '';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '';
 
 async function apiFetch(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth_token');
