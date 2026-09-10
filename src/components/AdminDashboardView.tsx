@@ -58,9 +58,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onOpenEm
   };
 
   const handleExportExcel = () => {
-    // Generate CSV for Excel export with Ministry formatting
+    // Generate CSV for Excel export
     let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
-    csvContent += 'المملكة الأردنية الهاشمية - وزارة التربية والتعليم\n';
     csvContent += 'مدرسة الملك حسين بن طلال الثانوية للبنين - تقرير الحضور والغياب الشهري\n\n';
     csvContent += 'اسم الطالب,الفصل الدراسي,الرقم الوطني/التعريفي,أيام الحضور,أيام الغياب,الغياب بعذر,نسبة الحضور\n';
 
@@ -122,7 +121,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ onOpenEm
             className="h-10 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
           >
             <Sparkles className="w-4 h-4" />
-            <span>تصدير Excel للوزارة</span>
+            <span>تصدير تقرير Excel</span>
           </button>
 
         </div>

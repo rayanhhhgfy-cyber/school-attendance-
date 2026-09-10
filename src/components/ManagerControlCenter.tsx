@@ -598,7 +598,7 @@ export const ManagerControlCenter: React.FC = () => {
                 className="w-full h-11 px-3.5 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 rounded-xl text-sm font-bold text-slate-900 dark:text-white"
               />
               <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-                يظهر هذا الاسم على كشوفات الطباعة وتصديرات Excel للوزارة.
+                يظهر هذا الاسم على كشوفات الطباعة وتصديرات Excel والتقارير الرسمية.
               </span>
             </div>
 

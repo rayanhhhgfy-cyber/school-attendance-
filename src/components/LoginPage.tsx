@@ -437,7 +437,7 @@ export const LoginPage: React.FC = () => {
                         type="text"
                     value={loginUsername}
                     onChange={e => setLoginUsername(e.target.value)}
-                    placeholder="مثال: rayyan أو saleh"
+                    placeholder=""
                     dir="ltr"
                     autoComplete="username"
                         required
@@ -461,7 +461,7 @@ export const LoginPage: React.FC = () => {
                     type={showLoginPassword ? 'text' : 'password'}
                     value={loginPassword}
                     onChange={e => setLoginPassword(e.target.value)}
-                    placeholder="••••••"
+                    placeholder=""
                         dir="ltr"
                     autoComplete="current-password"
                     required

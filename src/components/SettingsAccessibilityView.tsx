@@ -502,7 +502,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   type="text"
                   value={profileSubject}
                   onChange={e => setProfileSubject(e.target.value)}
-                  placeholder="مثال: الرياضيات"
+                  placeholder=""
                   className="w-full h-10 px-3 bg-slate-50 dark:bg-neutral-950 font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-neutral-700 text-xs focus:bg-white dark:focus:bg-neutral-900"
                 />
               </div>
@@ -515,7 +515,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   type="text"
                   value={profilePhone}
                   onChange={e => setProfilePhone(e.target.value)}
-                  placeholder="05xxxxxxxx"
+                  placeholder=""
                   className="w-full h-10 px-3 bg-slate-50 dark:bg-neutral-950 font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-neutral-700 text-xs focus:bg-white dark:focus:bg-neutral-900"
                 />
               </div>

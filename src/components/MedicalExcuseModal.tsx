@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Student } from '../types';
 import { useAttendance } from '../context/AttendanceContext';
@@ -86,17 +87,17 @@ export const MedicalExcuseModal: React.FC<MedicalExcuseModalProps> = ({
     document.body.removeChild(link);
   };
 
-  return (
+  const modalContent = (
     <div
       id="medical-excuse-modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-xs overflow-y-auto"
       dir="rtl"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white dark:bg-neutral-900 text-slate-900 dark:text-white rounded-3xl shadow-2xl border border-slate-200 dark:border-neutral-800 max-w-lg w-full overflow-hidden flex flex-col my-auto max-h-[90vh]"
+        className="bg-white dark:bg-neutral-900 text-slate-900 dark:text-white rounded-3xl shadow-2xl border border-slate-200 dark:border-neutral-800 max-w-lg w-full overflow-hidden flex flex-col my-auto max-h-[90vh] z-50"
       >
         {/* Header */}
         <div className="p-4 bg-blue-900 text-white flex items-center justify-between">
@@ -258,4 +259,6 @@ export const MedicalExcuseModal: React.FC<MedicalExcuseModalProps> = ({
       </motion.div>
     </div>
   );
+
+  return ReactDOM.createPortal(modalContent, document.body);
 };

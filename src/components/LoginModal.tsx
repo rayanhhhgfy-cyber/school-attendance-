@@ -128,7 +128,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   id="login-username-input"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  placeholder="مثال: rayyan أو saleh"
+                  placeholder=""
                   dir="ltr"
                   autoComplete="username"
                   required
@@ -149,7 +149,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   id="login-password-input"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••"
+                  placeholder=""
                   dir="ltr"
                   autoComplete="current-password"
                   required

@@ -273,7 +273,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               id={`btn-present-${student.id}`}
               type="button"
               onClick={() => onStatusChange('present')}
-              className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
+              className={`min-h-[44px] px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition cursor-pointer active:scale-98 ${
                 currentStatus === 'present'
                   ? 'bg-emerald-700 dark:bg-emerald-600 text-white ring-2 ring-emerald-300 dark:ring-emerald-700 shadow-xs'
                   : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-800/60'
@@ -288,7 +288,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               id={`btn-absent-${student.id}`}
               type="button"
               onClick={() => onStatusChange('absent')}
-              className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
+              className={`min-h-[44px] px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition cursor-pointer active:scale-98 ${
                 currentStatus === 'absent'
                   ? 'bg-red-700 dark:bg-red-600 text-white ring-2 ring-red-300 dark:ring-red-700 shadow-xs'
                   : 'bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-300 dark:border-red-800/60'
@@ -303,7 +303,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
               id={`btn-late-${student.id}`}
               type="button"
               onClick={() => onStatusChange('late')}
-              className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
+              className={`min-h-[44px] px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition cursor-pointer active:scale-98 ${
                 currentStatus === 'late'
                   ? 'bg-amber-600 dark:bg-amber-500 text-white ring-2 ring-amber-300 dark:ring-amber-700 shadow-xs'
                   : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-300 dark:border-amber-800/60'
@@ -321,7 +321,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
                 onStatusChange('excused');
                 setShowExcuseModal(true);
               }}
-              className={`min-h-[42px] px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-sm font-bold transition cursor-pointer active:scale-98 ${
+              className={`min-h-[44px] px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition cursor-pointer active:scale-98 ${
                 currentStatus === 'excused'
                   ? 'bg-blue-700 dark:bg-blue-600 text-white ring-2 ring-blue-300 dark:ring-blue-700 shadow-xs'
                   : 'bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-300 dark:border-blue-800/60'
