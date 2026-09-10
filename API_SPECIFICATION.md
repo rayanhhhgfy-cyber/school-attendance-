@@ -1,400 +1,193 @@
-# API Specification & Endpoint Blueprint
+# 🤖 AI Prompt: Complete Backend Implementation & Frontend Integration Guide
 ## المنظومة الرقمية لرصد الحضور الذكي والغياب الميداني (مدرسة الملك حسين بن طلال الثانوية للبنين)
 
-This document provides a comprehensive, exhaustive blueprint of all REST API endpoints required by this frontend application.
+> **Instructions for the User:** Copy and paste the prompt below into any AI Assistant (like ChatGPT, Claude, Cursor, or Jules) to automatically build the full backend API and connect it directly to this React 19 + TypeScript frontend application!
+
+```markdown
+### 🚀 SYSTEM PROMPT: FULL-STACK BACKEND GENERATION & FRONTEND INTEGRATION BLUEPRINT
+
+You are an expert Full-Stack Software Engineer & Database Architect.
+Your task is to implement a complete, production-ready backend (API + Database) for this React 19 + TypeScript + Vite School Attendance Application ("مدرسة الملك حسين بن طلال الثانوية للبنين") and wire it to the frontend context (`src/context/AttendanceContext.tsx`).
 
 ---
 
-## 1. Authentication & Session Management (`/api/auth`)
+#### 1. INITIAL SETUP & DATABASE SCHEMA (Source of Truth)
+Design database tables/collections matching the exact frontend models in `src/types.ts`:
 
-### 1.1 Login User
-* **Endpoint:** `POST /api/auth/login`
-* **Access:** Public
-* **Description:** Authenticates user (Teacher or Manager) using username and password. Returns JWT token and User object.
-* **Request Body:**
-```json
-{
-  "username": "string",
-  "password": "string"
-}
-```
-* **Response (200 OK):**
-```json
-{
-  "token": "string (JWT)",
-  "user": {
-    "id": "string",
-    "username": "string",
-    "name": "string",
-    "role": "manager | teacher",
-    "teacherId": "string (optional)",
-    "assignedClasses": ["classId"],
-    "phone": "string",
-    "subject": "string",
-    "permissions": {}
-  }
-}
-```
+1. **Users (`users` table)**:
+   - `id`: string (PRIMARY KEY, UUID)
+   - `username`: string (UNIQUE)
+   - `password`: string (Hashed with bcrypt)
+   - `name`: string
+   - `role`: 'manager' | 'teacher'
+   - `teacher_id`: string (Optional)
+   - `subject`: string (Optional)
+   - `phone`: string (Optional)
+   - `assigned_classes`: JSON Array of class IDs
+   - `permissions`: JSON Object (TeacherPermissions)
 
-### 1.2 Register User
-* **Endpoint:** `POST /api/auth/register`
-* **Access:** Manager / Admin
-* **Description:** Creates a new teacher or manager account.
-* **Request Body:**
-```json
-{
-  "username": "string",
-  "password": "string",
-  "name": "string",
-  "role": "manager | teacher",
-  "phone": "string",
-  "subject": "string",
-  "assignedClasses": ["classId"],
-  "permissions": {}
-}
-```
+2. **Classes (`classes` table)**:
+   - `id`: string (PRIMARY KEY)
+   - `name`: string (e.g., 'الصف التاسع (أ)')
+   - `grade_level`: string
+   - `room`: string
+   - `homeroom_teacher`: string
+   - `student_count`: integer
 
-### 1.3 Get Current User Profile (`Me`)
-* **Endpoint:** `GET /api/auth/me`
-* **Access:** Authenticated
-* **Headers:** `Authorization: Bearer <token>`
-* **Response (200 OK):** `UserAccount` object.
+3. **Students (`students` table)**:
+   - `id`: string (PRIMARY KEY)
+   - `name`: string
+   - `seat_number`: integer
+   - `class_id`: string (FOREIGN KEY -> classes.id)
+   - `avatar_seed`: string
+   - `parent_name`: string
+   - `parent_phone`: string
+   - `guardian_phone`: string (Optional)
+   - `consecutive_absences`: integer
+   - `health_note`: text (Optional)
+   - `academic_note`: text (Optional)
 
----
+4. **Attendance Sessions (`attendance_sessions` table)**:
+   - `id`: string (PRIMARY KEY)
+   - `class_id`: string (FOREIGN KEY -> classes.id)
+   - `period_number`: integer (1..7)
+   - `date`: string (YYYY-MM-DD)
+   - `is_submitted`: boolean
+   - `submitted_at`: string (ISO Timestamp)
+   - `submitted_by_user_id`: string (FOREIGN KEY -> users.id)
+   - `submitted_teacher_name`: string
+   - UNIQUE CONSTRAINT on (`class_id`, `period_number`, `date`)
 
-## 2. User & Staff Management (`/api/users` & `/api/staff`)
+5. **Attendance Records (`attendance_records` table)**:
+   - `id`: string (PRIMARY KEY)
+   - `session_id`: string (FOREIGN KEY -> attendance_sessions.id)
+   - `student_id`: string (FOREIGN KEY -> students.id)
+   - `status`: 'present' | 'absent' | 'late' | 'excused'
+   - `note`: text (Optional)
+   - `updated_at`: string (ISO Timestamp)
 
-### 2.1 Get All Users / Staff
-* **Endpoint:** `GET /api/users`
-* **Access:** Manager
-* **Response (200 OK):** Array of `UserAccount` / `StaffMember`.
+6. **Medical Excuses (`medical_excuses` table)**:
+   - `id`: string (PRIMARY KEY)
+   - `student_id`: string (FOREIGN KEY -> students.id)
+   - `date`: string (YYYY-MM-DD)
+   - `image_url`: text (Base64 or S3 URL)
+   - `file_name`: string (Optional)
+   - `uploaded_at`: string
+   - `uploaded_by`: string
 
-### 2.2 Add User Account
-* **Endpoint:** `POST /api/users`
-* **Access:** Manager
-* **Request Body:** `Omit<UserAccount, 'id'>`
+7. **Timetable / Schedule (`timetable_slots` table)**:
+   - `id`: string (PRIMARY KEY)
+   - `day`: string ('الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس')
+   - `period_number`: integer
+   - `time_range`: string
+   - `subject`: string
+   - `class_id`: string (FOREIGN KEY -> classes.id)
+   - `class_name`: string
+   - `room`: string
+   - `teacher_id`: string (FOREIGN KEY -> users.id)
+   - `teacher_name`: string
+   - `substitute_teacher_id`: string (Optional)
+   - `substitute_teacher_name`: string (Optional)
 
-### 2.3 Update User Account
-* **Endpoint:** `PUT /api/users/:id`
-* **Access:** Manager or self (for profile details)
-* **Request Body:** `Partial<UserAccount>`
+8. **Period Timings (`period_timings` table)**:
+   - `period_number`: integer (PRIMARY KEY)
+   - `name`: string
+   - `start_time`: string
+   - `end_time`: string
+   - `attendance_allowed_from`: string
+   - `attendance_allowed_until`: string
+   - `window_minutes`: integer
 
-### 2.4 Delete User Account
-* **Endpoint:** `DELETE /api/users/:id`
-* **Access:** Manager
+9. **System Settings (`system_settings` table)**:
+   - `id`: string (PRIMARY KEY, single row)
+   - `school_name`: string
+   - `editing_deadline`: string
+   - `editing_deadline_enabled`: boolean
+   - `emergency_lockdown`: boolean
+   - `lockdown_time`: string (Optional)
+   - `enable_sms_alerts`: boolean
+   - `pause_alerts_on_holidays`: boolean
+   - `default_all_present`: boolean
+   - `allow_offline_mode`: boolean
+   - `enable_push_notifications`: boolean
+   - `require_excuse_image`: boolean
 
-### 2.5 Update Staff Role & Status
-* **Endpoint:** `PUT /api/staff/:id/role`
-* **Access:** Manager
-* **Request Body:**
-```json
-{
-  "role": "admin | supervisor | teacher",
-  "status": "نشط | في إجازة"
-}
-```
-
----
-
-## 3. Class Management (`/api/classes`)
-
-### 3.1 List All Classes
-* **Endpoint:** `GET /api/classes`
-* **Access:** Authenticated
-* **Response (200 OK):** Array of `SchoolClass` objects.
-
-### 3.2 Create Class
-* **Endpoint:** `POST /api/classes`
-* **Access:** Manager (or teacher with `canAddClasses` permission)
-* **Request Body:**
-```json
-{
-  "name": "string (e.g., الصف التاسع (أ))",
-  "gradeLevel": "string",
-  "room": "string",
-  "homeroomTeacher": "string"
-}
-```
-
-### 3.3 Update Class
-* **Endpoint:** `PUT /api/classes/:id`
-* **Access:** Manager / Authorized Teacher
-* **Request Body:** `Partial<SchoolClass>`
-
-### 3.4 Delete Class
-* **Endpoint:** `DELETE /api/classes/:id`
-* **Access:** Manager
+10. **Notifications (`notifications` table)**:
+    - `id`: string (PRIMARY KEY)
+    - `title`: string
+    - `message`: text
+    - `time`: string
+    - `type`: 'reminder' | 'warning' | 'info'
+    - `class_id`: string (Optional)
+    - `read`: boolean
 
 ---
 
-## 4. Student Management (`/api/students`)
+#### 2. EXHAUSTIVE REST API ENDPOINTS SPECIFICATION
 
-### 4.1 List Students
-* **Endpoint:** `GET /api/students`
-* **Query Parameters:** `classId` (optional), `search` (optional)
-* **Access:** Authenticated
-* **Response (200 OK):** Array of `Student` objects.
+##### 1. Authentication (`/api/auth`)
+* `POST /api/auth/login` - Authenticate user & return JWT token + user object.
+* `POST /api/auth/register` - Create new teacher/manager account.
+* `GET /api/auth/me` - Fetch currently logged-in user profile from JWT Bearer token.
 
-### 4.2 Add Single Student
-* **Endpoint:** `POST /api/students`
-* **Access:** Manager / Teacher with permission
-* **Request Body:**
-```json
-{
-  "name": "string",
-  "seatNumber": 1,
-  "classId": "string",
-  "parentName": "string",
-  "parentPhone": "string",
-  "guardianPhone": "string",
-  "healthNote": "string (optional)",
-  "academicNote": "string (optional)"
-}
-```
+##### 2. Users & Staff (`/api/users` & `/api/staff`)
+* `GET /api/users` - Fetch all user accounts and staff members.
+* `POST /api/users` - Add user account.
+* `PUT /api/users/:id` - Update user account / password / permissions.
+* `DELETE /api/users/:id` - Delete user account.
+* `PUT /api/staff/:id/role` - Update staff role ('admin' | 'supervisor' | 'teacher') and status ('نشط' | 'في إجازة').
 
-### 4.3 Bulk Add / Import Students
-* **Endpoint:** `POST /api/students/bulk`
-* **Access:** Manager / Teacher with permission
-* **Request Body:**
-```json
-{
-  "classId": "string",
-  "students": [
-    {
-      "name": "string",
-      "seatNumber": 1,
-      "parentPhone": "string"
-    }
-  ]
-}
-```
+##### 3. Classes (`/api/classes`)
+* `GET /api/classes` - Fetch all school classes.
+* `POST /api/classes` - Create class.
+* `PUT /api/classes/:id` - Update class name, grade level, or room.
+* `DELETE /api/classes/:id` - Delete class.
 
-### 4.4 Update Student Information
-* **Endpoint:** `PUT /api/students/:id`
-* **Access:** Manager / Teacher with permission
-* **Request Body:** `Partial<Student>`
+##### 4. Students (`/api/students`)
+* `GET /api/students` - Fetch students (filter by `classId` query param).
+* `POST /api/students` - Add single student (name, seat number, parent contact).
+* `POST /api/students/bulk` - Bulk insert students into class.
+* `PUT /api/students/:id` - Update student information.
+* `DELETE /api/students/:id` - Delete student.
+* `POST /api/students/extract-names` - Extract names from OCR file upload or Excel text parsing.
 
-### 4.5 Delete Student
-* **Endpoint:** `DELETE /api/students/:id`
-* **Access:** Manager / Teacher with permission
+##### 5. Attendance Operations (`/api/attendance`)
+* `GET /api/attendance` - Query params: `classId`, `date`, `period`. Fetch attendance session and student records.
+* `POST /api/attendance/record` - Record status for a single student.
+* `POST /api/attendance/submit` - Submit and freeze session.
+* `POST /api/attendance/reset` - Reset session attendance records.
+* `POST /api/attendance/reopen` - Reopen session for editing.
+* `GET /api/attendance/stats` - Query params: `date`, `startDate`, `endDate`, `classId`. Aggregate statistics for dashboards and reports.
 
-### 4.6 OCR / File Scan Student Names Extraction
-* **Endpoint:** `POST /api/students/extract-names`
-* **Access:** Authenticated
-* **Request Body:** `FormData` containing image or excel file.
-* **Response (200 OK):**
-```json
-{
-  "extractedNames": ["string"]
-}
-```
+##### 6. Medical Excuses (`/api/excuses`)
+* `POST /api/excuses` - Upload medical excuse (base64/image).
+* `GET /api/excuses` - Fetch student excuses by `studentId` and `date`.
+* `DELETE /api/excuses/:id` - Delete medical excuse.
+
+##### 7. Timetable & Period Timings (`/api/timetable` & `/api/periods`)
+* `GET /api/timetable` - Get full schedule slots.
+* `POST /api/timetable` - Add timetable slot.
+* `PUT /api/timetable/:id` - Update timetable slot / assign substitute teacher (`substituteTeacherId`).
+* `DELETE /api/timetable/:id` - Delete timetable slot.
+* `GET /api/periods` & `PUT /api/periods/:periodNumber` - Get and update period timing windows.
+
+##### 8. Settings & Emergency Lockdown (`/api/settings`)
+* `GET /api/settings` - Get system settings.
+* `PUT /api/settings` - Update settings & editing deadline.
+* `POST /api/settings/lockdown` - Toggle emergency lockdown.
+
+##### 9. Notifications & SMS Alerts (`/api/notifications`)
+* `GET /api/notifications` - Get app notifications.
+* `POST /api/notifications` - Broadcast notification.
+* `DELETE /api/notifications/:id` - Dismiss notification.
+* `POST /api/notifications/sms` - Trigger SMS / WhatsApp alert to parent.
 
 ---
 
-## 5. Attendance Operations (`/api/attendance`)
-
-### 5.1 Fetch Attendance Session & Records
-* **Endpoint:** `GET /api/attendance`
-* **Query Parameters:** `classId`, `date` (YYYY-MM-DD), `period` (number 1..7)
-* **Access:** Authenticated
-* **Response (200 OK):**
-```json
-{
-  "sessionKey": "classId_date_pPeriod",
-  "isSubmitted": boolean,
-  "meta": {
-    "submittedAt": "ISO string",
-    "submittedBy": "userId",
-    "submittedTeacherName": "string",
-    "total": 30,
-    "present": 28,
-    "absent": 1,
-    "late": 1,
-    "excused": 0
-  },
-  "records": {
-    "studentId": {
-      "studentId": "string",
-      "status": "present | absent | late | excused",
-      "note": "string",
-      "updatedAt": "ISO string"
-    }
-  }
-}
-```
-
-### 5.2 Record / Update Single Student Attendance Status
-* **Endpoint:** `POST /api/attendance/record`
-* **Access:** Authenticated (Enforces teacher assignment and deadline permissions)
-* **Request Body:**
-```json
-{
-  "classId": "string",
-  "date": "YYYY-MM-DD",
-  "period": 1,
-  "studentId": "string",
-  "status": "present | absent | late | excused",
-  "note": "string (optional)"
-}
-```
-
-### 5.3 Submit Attendance Session
-* **Endpoint:** `POST /api/attendance/submit`
-* **Access:** Authenticated Teacher / Manager
-* **Request Body:**
-```json
-{
-  "classId": "string",
-  "date": "YYYY-MM-DD",
-  "period": 1,
-  "records": {
-    "studentId": {
-      "studentId": "string",
-      "status": "present | absent | late | excused",
-      "note": "string"
-    }
-  }
-}
-```
-
-### 5.4 Reset Attendance Session
-* **Endpoint:** `POST /api/attendance/reset`
-* **Access:** Authenticated Teacher / Manager
-* **Request Body:**
-```json
-{
-  "classId": "string",
-  "date": "YYYY-MM-DD",
-  "period": 1
-}
-```
-
-### 5.5 Reopen Attendance Session for Editing
-* **Endpoint:** `POST /api/attendance/reopen`
-* **Access:** Manager or Teacher with `canReopenAttendance` permission
-* **Request Body:**
-```json
-{
-  "classId": "string",
-  "date": "YYYY-MM-DD",
-  "period": 1
-}
-```
-
-### 5.6 Get Overall Attendance Statistics & Reports
-* **Endpoint:** `GET /api/attendance/stats`
-* **Query Parameters:** `date`, `startDate`, `endDate`, `classId`
-* **Access:** Authenticated
-
----
-
-## 6. Medical Excuses (`/api/excuses`)
-
-### 6.1 Upload Medical Excuse Image
-* **Endpoint:** `POST /api/excuses`
-* **Access:** Authenticated Teacher / Manager
-* **Request Body:**
-```json
-{
-  "studentId": "string",
-  "date": "YYYY-MM-DD",
-  "imageUrl": "base64 or S3 URL",
-  "fileName": "string"
-}
-```
-
-### 6.2 Get Student Medical Excuse
-* **Endpoint:** `GET /api/excuses`
-* **Query Parameters:** `studentId`, `date`
-* **Access:** Authenticated
-
-### 6.3 Delete Medical Excuse
-* **Endpoint:** `DELETE /api/excuses/:id`
-* **Access:** Manager / Teacher with `canDeleteExcuses` permission
-
----
-
-## 7. Timetable & Schedule (`/api/timetable` & `/api/periods`)
-
-### 7.1 Get Timetable Slots
-* **Endpoint:** `GET /api/timetable`
-* **Query Parameters:** `teacherId`, `classId`, `day`
-* **Access:** Authenticated
-
-### 7.2 Add Timetable Slot
-* **Endpoint:** `POST /api/timetable`
-* **Access:** Manager / Schedule Administrator
-
-### 7.3 Update Timetable Slot / Assign Substitute Teacher
-* **Endpoint:** `PUT /api/timetable/:id`
-* **Access:** Manager / Teacher with permission
-* **Request Body:**
-```json
-{
-  "substituteTeacherId": "string",
-  "substituteTeacherName": "string",
-  "subject": "string",
-  "room": "string"
-}
-```
-
-### 7.4 Delete Timetable Slot
-* **Endpoint:** `DELETE /api/timetable/:id`
-* **Access:** Manager
-
-### 7.5 Get & Update Period Timings
-* **Endpoint:** `GET /api/periods` & `PUT /api/periods/:periodNumber`
-* **Access:** Manager
-
----
-
-## 8. System Settings & Lockdown (`/api/settings`)
-
-### 8.1 Get System Settings
-* **Endpoint:** `GET /api/settings`
-* **Access:** Authenticated
-
-### 8.2 Update System Settings
-* **Endpoint:** `PUT /api/settings`
-* **Access:** Manager
-* **Request Body:** `Partial<SystemSettings>`
-
-### 8.3 Toggle Emergency Lockdown
-* **Endpoint:** `POST /api/settings/lockdown`
-* **Access:** Manager
-* **Request Body:**
-```json
-{
-  "emergencyLockdown": true,
-  "reason": "string"
-}
-```
-
----
-
-## 9. Notifications & SMS Alerts (`/api/notifications`)
-
-### 9.1 Get App Notifications
-* **Endpoint:** `GET /api/notifications`
-* **Access:** Authenticated
-
-### 9.2 Add Broadcast / Test Notification
-* **Endpoint:** `POST /api/notifications`
-* **Access:** Manager
-
-### 9.3 Dismiss / Clear Notifications
-* **Endpoint:** `DELETE /api/notifications/:id` & `DELETE /api/notifications`
-* **Access:** Authenticated
-
-### 9.4 Send Parent SMS / WhatsApp Alert Trigger
-* **Endpoint:** `POST /api/notifications/sms`
-* **Access:** Authenticated Teacher / Manager
-* **Request Body:**
-```json
-{
-  "studentId": "string",
-  "parentPhone": "string",
-  "messageType": "absence | late | praise",
-  "messageText": "string"
-}
+#### 3. FRONTEND INTEGRATION INSTRUCTIONS
+Modify `src/context/AttendanceContext.tsx`:
+1. Replace `localStorage` mock state initialization with `useEffect` async `fetch()` or `axios` calls to backend endpoints.
+2. Store JWT in `localStorage.setItem('auth_token', token)` upon login and pass `Authorization: Bearer ${token}` header in all requests.
+3. Replace all mutation handlers (`addStudent`, `submitAttendanceSession`, `updateUserAccount`, etc.) to call corresponding API endpoints.
+4. Verify all frontend views (`TakeAttendanceView`, `StudentManagementModal`, `AdminDashboardView`, `ManagerControlCenter`) function seamlessly with the backend.
 ```
