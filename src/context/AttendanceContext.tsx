@@ -19,16 +19,6 @@ import {
   AppTheme,
   MedicalExcuse,
 } from '../types';
-import {
-  INITIAL_CLASSES,
-  INITIAL_STUDENTS,
-  INITIAL_STAFF,
-  INITIAL_TIMETABLE,
-  INITIAL_SETTINGS,
-  INITIAL_NOTIFICATIONS,
-  INITIAL_USERS,
-  INITIAL_PERIOD_TIMINGS,
-} from '../data/mockData';
 import { soundFx } from '../utils/audio';
 
 export interface SessionMeta {
@@ -52,23 +42,23 @@ interface AttendanceContextType {
   // Authentication & Users
   currentUser: UserAccount | null;
   users: UserAccount[];
-  login: (username: string, password: string) => { success: boolean; message?: string };
-  registerUser: (userData: Omit<UserAccount, 'id'>) => { success: boolean; message?: string };
+  login: (username: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  registerUser: (userData: Omit<UserAccount, 'id'>) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   switchUser: (userId: string) => void;
-  addUserAccount: (user: Omit<UserAccount, 'id'>) => void;
-  updateUserAccount: (id: string, updates: Partial<UserAccount>) => void;
-  deleteUserAccount: (id: string) => void;
+  addUserAccount: (user: Omit<UserAccount, 'id'>) => Promise<void>;
+  updateUserAccount: (id: string, updates: Partial<UserAccount>) => Promise<void>;
+  deleteUserAccount: (id: string) => Promise<void>;
 
   // Period timings
   periodTimings: PeriodTimingConfig[];
-  updatePeriodTiming: (periodNumber: number, updates: Partial<PeriodTimingConfig>) => void;
+  updatePeriodTiming: (periodNumber: number, updates: Partial<PeriodTimingConfig>) => Promise<void>;
 
   // Class & Session selection
   classes: SchoolClass[];
-  addClass: (cls: Omit<SchoolClass, 'id'>) => SchoolClass;
-  updateClass: (id: string, updates: Partial<SchoolClass>) => void;
-  deleteClass: (id: string) => void;
+  addClass: (cls: Omit<SchoolClass, 'id'>) => Promise<SchoolClass>;
+  updateClass: (id: string, updates: Partial<SchoolClass>) => Promise<void>;
+  deleteClass: (id: string) => Promise<void>;
   selectedClassId: string;
   setSelectedClassId: (id: string) => void;
   selectedPeriod: number;
@@ -78,15 +68,15 @@ interface AttendanceContextType {
 
   // Students
   students: Student[];
-  addStudent: (student: Omit<Student, 'id'>) => void;
-  updateStudent: (id: string, updates: Partial<Student>) => void;
-  deleteStudent: (id: string) => void;
+  addStudent: (student: Omit<Student, 'id'>) => Promise<void>;
+  updateStudent: (id: string, updates: Partial<Student>) => Promise<void>;
+  deleteStudent: (id: string) => Promise<void>;
 
   // Medical Excuses
   medicalExcuses: MedicalExcuse[];
-  uploadMedicalExcuse: (studentId: string, date: string, imageUrl: string, fileName?: string) => void;
+  uploadMedicalExcuse: (studentId: string, date: string, imageUrl: string, fileName?: string) => Promise<void>;
   getStudentExcuse: (studentId: string, date?: string) => MedicalExcuse | undefined;
-  deleteMedicalExcuse: (id: string) => void;
+  deleteMedicalExcuse: (id: string) => Promise<void>;
 
   // Active Class & Students
   activeClass: SchoolClass;
@@ -104,31 +94,31 @@ interface AttendanceContextType {
   canUserEditAttendance: (classId: string, periodNumber: number) => { allowed: boolean; reason?: string };
   setStudentStatus: (studentId: string, status: AttendanceStatus, note?: string) => void;
   markAllPresent: () => void;
-  resetAttendanceSession: () => void;
-  submitAttendanceSession: () => { present: number; absent: number; late: number; excused: number };
-  reopenAttendanceSession: () => void;
+  resetAttendanceSession: () => Promise<void>;
+  submitAttendanceSession: () => Promise<{ present: number; absent: number; late: number; excused: number }>;
+  reopenAttendanceSession: () => Promise<void>;
 
   // Timetable
   timetable: TimetableSlot[];
-  addTimetableSlot: (slot: Omit<TimetableSlot, 'id'>) => void;
-  updateTimetableSlot: (id: string, updates: Partial<TimetableSlot>) => void;
-  deleteTimetableSlot: (id: string) => void;
+  addTimetableSlot: (slot: Omit<TimetableSlot, 'id'>) => Promise<void>;
+  updateTimetableSlot: (id: string, updates: Partial<TimetableSlot>) => Promise<void>;
+  deleteTimetableSlot: (id: string) => Promise<void>;
   currentTeacherSlot: TimetableSlot | null;
   allAssignedTeacherSlots: TimetableSlot[];
 
   // Admin & Staff
   staff: StaffMember[];
-  updateStaffRole: (staffId: string, role: StaffRole) => void;
+  updateStaffRole: (staffId: string, role: StaffRole) => Promise<void>;
   settings: SystemSettings;
-  updateSetting: (key: keyof SystemSettings, val: any) => void;
-  toggleEmergencyLockdown: (reason?: string) => void;
+  updateSetting: (key: keyof SystemSettings, val: any) => Promise<void>;
+  toggleEmergencyLockdown: (reason?: string) => Promise<void>;
 
   // Alerts & Notifications
   notifications: AppNotification[];
-  addNotification: (title: string, message: string, type?: 'reminder' | 'warning' | 'info', classId?: string) => void;
+  addNotification: (title: string, message: string, type?: 'reminder' | 'warning' | 'info', classId?: string) => Promise<void>;
   triggerTestAlert: (classId?: string, customMessage?: string) => void;
-  dismissNotification: (id: string) => void;
-  clearAllNotifications: () => void;
+  dismissNotification: (id: string) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
   requestNotificationPermission: () => Promise<boolean>;
 
   // System Preferences
@@ -159,26 +149,36 @@ interface AttendanceContextType {
 const AttendanceContext = createContext<AttendanceContextType | null>(null);
 
 const STORAGE_KEY_PREFIX = 'school_att_';
+const API_BASE_URL = '';
+
+async function apiFetch(endpoint: string, options: RequestInit = {}) {
+  const token = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth_token');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || data.error || 'فشلت المزامنة مع خادم البيانات.');
+  }
+  return data;
+}
 
 export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Navigation
   const [activeTab, setActiveTab] = useState<'take_attendance' | 'todays_attendance' | 'dashboard' | 'timetable' | 'history' | 'students' | 'settings'>('take_attendance');
 
-  // Users & Authentication
-  const [users, setUsers] = useState<UserAccount[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'users');
-    if (saved) {
-      try {
-        const parsed: UserAccount[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const hasOldClasses = parsed.some(u => u.assignedClasses?.some(c => c.includes('class-1a') || c.includes('class-2b')));
-          if (!hasOldClasses) return parsed;
-        }
-      } catch {}
-    }
-    return INITIAL_USERS;
-  });
-
+  // Core Backend States
+  const [users, setUsers] = useState<UserAccount[]>([]);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'current_user');
     if (saved) {
@@ -190,157 +190,213 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     return null;
   });
 
-  // Period Timings
-  const [periodTimings, setPeriodTimings] = useState<PeriodTimingConfig[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'period_timings');
-    return saved ? JSON.parse(saved) : INITIAL_PERIOD_TIMINGS;
+  const [periodTimings, setPeriodTimings] = useState<PeriodTimingConfig[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [medicalExcuses, setMedicalExcuses] = useState<MedicalExcuse[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [timetable, setTimetable] = useState<TimetableSlot[]>([]);
+  const [settings, setSettings] = useState<SystemSettings>({
+    enableSmsAlerts: true,
+    pauseAlertsOnHolidays: true,
+    defaultAllPresent: true,
+    allowOfflineMode: true,
+    lockEditingAfterPeriod: false,
+    emergencyLockdown: false,
+    schoolName: 'مدرسة الملك حسين بن طلال الثانوية للبنين',
+    editingDeadline: '14:00',
+    editingDeadlineEnabled: false,
+    enablePushNotifications: true,
+    requireExcuseImage: false,
   });
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
-  // Classes & Students
-  const [classes, setClasses] = useState<SchoolClass[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'classes');
-    if (saved) {
-      try {
-        const parsed: SchoolClass[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(c => c.id === 'class-1a' || c.name.includes('الأول'))) {
-          return parsed;
-        }
-      } catch {}
-    }
-    return INITIAL_CLASSES;
-  });
-
-  const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'students');
-    if (saved) {
-      try {
-        const parsed: Student[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(s => s.classId === 'class-1a')) {
-          return parsed;
-        }
-      } catch {}
-    }
-    return INITIAL_STUDENTS;
-  });
-
+  // Selection
   const [selectedClassId, setSelectedClassId] = useState<string>('class-9th');
   const [selectedPeriod, setSelectedPeriod] = useState<number>(1);
-  const [currentDate, setCurrentDate] = useState<string>(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
-
-  // Medical Excuses
-  const [medicalExcuses, setMedicalExcuses] = useState<MedicalExcuse[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'medical_excuses');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Attendance Change Count (track how many times attendance has been changed/saved)
-  const [attendanceChangeCount, setAttendanceChangeCount] = useState<number>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'change_count');
-    return saved ? parseInt(saved, 10) : 0;
-  });
+  const [currentDate, setCurrentDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   // Attendance Records mapped by: `${classId}_${date}_p${period}` -> { [studentId]: AttendanceEntry }
-  const [attendanceMap, setAttendanceMap] = useState<Record<string, Record<string, AttendanceEntry>>>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'records');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        // fallback
-      }
-    }
-    // Seed initial session for today
-    const today = new Date().toISOString().split('T')[0];
-    const initialMap: Record<string, Record<string, AttendanceEntry>> = {};
-    
-    // Default everyone in 9th grade to present, with 1 absent and 1 late for realistic pulse
-    const key = `class-9th_${today}_p1`;
-    const records: Record<string, AttendanceEntry> = {};
-    INITIAL_STUDENTS.filter(s => s.classId === 'class-9th').forEach((s, idx) => {
-      let status: AttendanceStatus = 'present';
-      if (idx === 1) status = 'absent';
-      if (idx === 3) status = 'late';
-      records[s.id] = {
-        studentId: s.id,
-        status,
-        updatedAt: new Date().toISOString(),
-      };
-    });
-    initialMap[key] = records;
-    return initialMap;
-  });
-
-  // Submitted session metadata
-  const [submittedSessions, setSubmittedSessions] = useState<Record<string, SessionMeta>>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'submitted_sessions');
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  // Staff
-  const [staff, setStaff] = useState<StaffMember[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'staff');
-    if (saved) {
-      try {
-        const parsed: StaffMember[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(s => s.assignedClasses?.includes('class-1a'))) {
-          return parsed;
-        }
-      } catch {}
-    }
-    return INITIAL_STAFF;
-  });
-
-  // Timetable
-  const [timetable, setTimetable] = useState<TimetableSlot[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'timetable');
-    if (saved) {
-      try {
-        const parsed: TimetableSlot[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some(t => t.classId === 'class-1a')) {
-          return parsed;
-        }
-      } catch {}
-    }
-    return INITIAL_TIMETABLE;
-  });
-
-  // Settings
-  const [settings, setSettings] = useState<SystemSettings>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'settings');
-    const defaultSet: SystemSettings = {
-      ...INITIAL_SETTINGS,
-      schoolName: 'مدرسة الملك حسين بن طلال الثانوية للبنين',
-      editingDeadline: '14:00',
-      editingDeadlineEnabled: false,
-      enablePushNotifications: true,
-      requireExcuseImage: false,
-    };
-    return saved ? { ...defaultSet, ...JSON.parse(saved) } : defaultSet;
-  });
-
-  // Notifications
-  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'notifications');
-    return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
-  });
+  const [attendanceMap, setAttendanceMap] = useState<Record<string, Record<string, AttendanceEntry>>>( {});
+  const [submittedSessions, setSubmittedSessions] = useState<Record<string, SessionMeta>>({});
+  const [attendanceChangeCount, setAttendanceChangeCount] = useState<number>(0);
 
   // Preferences
   const [theme, setThemeState] = useState<AppTheme>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'theme');
-    if (saved === 'dark' || saved === 'light') return saved;
-    return 'light';
+    return (saved === 'dark' || saved === 'light') ? saved : 'light';
   });
 
+  const [fastLoadMode, setFastLoadModeState] = useState<boolean>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'fast_load');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const [soundEnabled, setSoundEnabledState] = useState<boolean>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'sound');
+    return saved ? JSON.parse(saved) : true;
+  });
+
+  const [lastSavedAt, setLastSavedAt] = useState<string>('مبتدئ');
+
+  // Load Initial Data from Backend
+  const loadBackendData = async () => {
+    try {
+      const [uRes, cRes, sRes, stRes, ttRes, ptRes, setRes, notifRes, excRes] = await Promise.all([
+        apiFetch('/api/users').catch(() => []),
+        apiFetch('/api/classes').catch(() => []),
+        apiFetch('/api/students').catch(() => []),
+        apiFetch('/api/staff').catch(() => []),
+        apiFetch('/api/timetable').catch(() => []),
+        apiFetch('/api/periods').catch(() => []),
+        apiFetch('/api/settings').catch(() => ({})),
+        apiFetch('/api/notifications').catch(() => []),
+        apiFetch('/api/excuses').catch(() => []),
+      ]);
+
+      if (Array.isArray(uRes) && uRes.length > 0) setUsers(uRes);
+      if (Array.isArray(cRes) && cRes.length > 0) {
+        setClasses(cRes);
+        if (!cRes.some(c => c.id === selectedClassId)) {
+          setSelectedClassId(cRes[0].id);
+        }
+      }
+      if (Array.isArray(sRes)) setStudents(sRes);
+      if (Array.isArray(stRes)) setStaff(stRes);
+      if (Array.isArray(ttRes)) setTimetable(ttRes);
+      if (Array.isArray(ptRes)) setPeriodTimings(ptRes);
+      if (setRes && Object.keys(setRes).length > 0) setSettings(prev => ({ ...prev, ...setRes }));
+      if (Array.isArray(notifRes)) setNotifications(notifRes);
+      if (Array.isArray(excRes)) setMedicalExcuses(excRes);
+
+      // Verify currently logged in user profile if token exists
+      const token = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth_token');
+      if (token) {
+        try {
+          const meData = await apiFetch('/api/auth/me');
+          if (meData?.user) {
+            setCurrentUser(meData.user);
+            localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(meData.user));
+          }
+        } catch {
+          // Token invalid or expired
+          localStorage.removeItem(STORAGE_KEY_PREFIX + 'auth_token');
+          localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user');
+          setCurrentUser(null);
+        }
+      }
+
+      setLastSavedAt(new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }));
+    } catch (err) {
+      console.error('Failed to load initial data from backend:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadBackendData();
+  }, []);
+
+  // Fetch Attendance Session Data whenever selectedClassId, selectedPeriod, or currentDate changes
+  const fetchCurrentSession = async (classId: string, period: number, date: string) => {
+    try {
+      const data = await apiFetch(`/api/attendance?classId=${classId}&date=${date}&period=${period}`);
+      const key = `${classId}_${date}_p${period}`;
+      if (data?.session) {
+        if (data.session.isSubmitted) {
+          const present = Object.values(data.records as Record<string, any>).filter((r: any) => r.status === 'present').length;
+          const absent = Object.values(data.records as Record<string, any>).filter((r: any) => r.status === 'absent').length;
+          const late = Object.values(data.records as Record<string, any>).filter((r: any) => r.status === 'late').length;
+          const excused = Object.values(data.records as Record<string, any>).filter((r: any) => r.status === 'excused').length;
+
+          setSubmittedSessions(prev => ({
+            ...prev,
+            [key]: {
+              submittedAt: data.session.submittedAt || '',
+              total: Object.keys(data.records).length,
+              present,
+              absent,
+              late,
+              excused,
+              submittedBy: data.session.submittedBy,
+              submittedTeacherName: data.session.submittedTeacherName,
+              periodNumber: period,
+              classId,
+            },
+          }));
+        } else {
+          setSubmittedSessions(prev => {
+            const copy = { ...prev };
+            delete copy[key];
+            return copy;
+          });
+        }
+
+        if (data.records && Object.keys(data.records).length > 0) {
+          setAttendanceMap(prev => ({
+            ...prev,
+            [key]: data.records,
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching attendance session:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedClassId && selectedPeriod && currentDate) {
+      fetchCurrentSession(selectedClassId, selectedPeriod, currentDate);
+    }
+  }, [selectedClassId, selectedPeriod, currentDate]);
+
+  // Derived current session key
+  const currentSessionKey = useMemo(() => {
+    return `${selectedClassId}_${currentDate}_p${selectedPeriod}`;
+  }, [selectedClassId, currentDate, selectedPeriod]);
+
+  // Active Class object
+  const activeClass = useMemo(() => {
+    return classes.find(c => c.id === selectedClassId) || classes[0] || {
+      id: selectedClassId,
+      name: 'الفصل المحدد',
+      gradeLevel: 'غير محدد',
+      room: 'غير محدد',
+      homeroomTeacher: 'غير محدد',
+      studentCount: 0,
+    };
+  }, [classes, selectedClassId]);
+
+  // Active Students in selected class
+  const activeStudents = useMemo(() => {
+    return students.filter(s => s.classId === selectedClassId);
+  }, [students, selectedClassId]);
+
+  // Ensure all students default to "حاضر" (Present) if session records don't exist yet
+  const currentRecords = useMemo(() => {
+    const existing = attendanceMap[currentSessionKey];
+    if (existing && Object.keys(existing).length > 0) {
+      return existing;
+    }
+    const defaultRecords: Record<string, AttendanceEntry> = {};
+    activeStudents.forEach(st => {
+      defaultRecords[st.id] = {
+        studentId: st.id,
+        status: 'present',
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    return defaultRecords;
+  }, [attendanceMap, currentSessionKey, activeStudents]);
+
+  const isCurrentSessionSubmitted = !!submittedSessions[currentSessionKey];
+  const currentSessionMeta = submittedSessions[currentSessionKey];
+
+  // Theme effect
   const setTheme = (newTheme: AppTheme) => {
     setThemeState(newTheme);
     try {
       localStorage.setItem(STORAGE_KEY_PREFIX + 'theme', newTheme);
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
   const toggleTheme = () => {
@@ -363,114 +419,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   }, [theme]);
 
-  const [fastLoadMode, setFastLoadModeState] = useState<boolean>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'fast_load');
-    return saved ? JSON.parse(saved) : false;
-  });
-
-  const [soundEnabled, setSoundEnabledState] = useState<boolean>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'sound');
-    return saved ? JSON.parse(saved) : true;
-  });
-
-  const [lastSavedAt, setLastSavedAt] = useState<string>('الآن محلياً');
-
-  // Sync to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'users', JSON.stringify(users));
-      if (currentUser) {
-        localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(currentUser));
-      } else {
-        localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user');
-      }
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'period_timings', JSON.stringify(periodTimings));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'records', JSON.stringify(attendanceMap));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'submitted_sessions', JSON.stringify(submittedSessions));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'medical_excuses', JSON.stringify(medicalExcuses));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'change_count', attendanceChangeCount.toString());
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'classes', JSON.stringify(classes));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'students', JSON.stringify(students));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'timetable', JSON.stringify(timetable));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'staff', JSON.stringify(staff));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'settings', JSON.stringify(settings));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'notifications', JSON.stringify(notifications));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'fast_load', JSON.stringify(fastLoadMode));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'sound', JSON.stringify(soundEnabled));
-      
-      const timeStr = new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
-      setLastSavedAt(timeStr);
-    } catch {
-      // Storage quota or private mode fallback
-    }
-  }, [users, currentUser, periodTimings, attendanceMap, submittedSessions, medicalExcuses, attendanceChangeCount, classes, students, timetable, staff, settings, notifications, fastLoadMode, soundEnabled]);
-
-  // Derived current session key
-  const currentSessionKey = useMemo(() => {
-    return `${selectedClassId}_${currentDate}_p${selectedPeriod}`;
-  }, [selectedClassId, currentDate, selectedPeriod]);
-
-  // Active Class object
-  const activeClass = useMemo(() => {
-    return classes.find(c => c.id === selectedClassId) || classes[0];
-  }, [classes, selectedClassId]);
-
-  // Active Students in selected class
-  const activeStudents = useMemo(() => {
-    return students.filter(s => s.classId === selectedClassId);
-  }, [students, selectedClassId]);
-
-  // Ensure all students default to "حاضر" (Present) if session records don't exist yet
-  const currentRecords = useMemo(() => {
-    const existing = attendanceMap[currentSessionKey];
-    if (existing && Object.keys(existing).length > 0) {
-      return existing;
-    }
-    // Smart Attendance by Exception: default all students to present
-    const defaultRecords: Record<string, AttendanceEntry> = {};
-    activeStudents.forEach(st => {
-      defaultRecords[st.id] = {
-        studentId: st.id,
-        status: 'present',
-        updatedAt: new Date().toISOString(),
-      };
-    });
-    return defaultRecords;
-  }, [attendanceMap, currentSessionKey, activeStudents]);
-
-  const isCurrentSessionSubmitted = !!submittedSessions[currentSessionKey];
-  const currentSessionMeta = submittedSessions[currentSessionKey];
-
-  // Medical Excuses methods
-  const uploadMedicalExcuse = (studentId: string, date: string, imageUrl: string, fileName?: string) => {
-    const id = 'excuse-' + Date.now();
-    const newExcuse: MedicalExcuse = {
-      id,
-      studentId,
-      date,
-      imageUrl,
-      fileName,
-      uploadedAt: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
-      uploadedBy: currentUser?.name || 'المعلم',
-    };
-
-    setMedicalExcuses(prev => [newExcuse, ...prev.filter(e => !(e.studentId === studentId && e.date === date))]);
-
-    // Automatically update student status to excused if in current session
-    setStudentStatus(studentId, 'excused', 'تم إرفاق عذر طبي مصور');
-
-    if (soundEnabled) soundFx.playSuccess();
-  };
-
-  const getStudentExcuse = (studentId: string, date: string = currentDate): MedicalExcuse | undefined => {
-    return medicalExcuses.find(e => e.studentId === studentId && (e.date === date || !e.date));
-  };
-
-  const deleteMedicalExcuse = (id: string) => {
-    setMedicalExcuses(prev => prev.filter(e => e.id !== id));
-    if (soundEnabled) soundFx.playTap();
-  };
-
   // Helper methods to query submission state for any period
   const isSessionSubmitted = (classId: string, periodNumber: number, date: string = currentDate): boolean => {
     const key = `${classId}_${date}_p${periodNumber}`;
@@ -482,7 +430,56 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     return submittedSessions[key];
   };
 
-  // Helper to intelligently resolve the right initial class and period for a teacher
+  // Medical Excuses methods
+  const uploadMedicalExcuse = async (studentId: string, date: string, imageUrl: string, fileName?: string) => {
+    try {
+      const result = await apiFetch('/api/excuses', {
+        method: 'POST',
+        body: JSON.stringify({
+          studentId,
+          date,
+          imageUrl,
+          fileName,
+          uploadedBy: currentUser?.name || 'المعلم',
+        }),
+      });
+
+      const newExcuse: MedicalExcuse = {
+        id: result.id,
+        studentId,
+        date,
+        imageUrl,
+        fileName,
+        uploadedAt: result.uploadedAt,
+        uploadedBy: result.uploadedBy,
+      };
+
+      setMedicalExcuses(prev => [newExcuse, ...prev.filter(e => !(e.studentId === studentId && e.date === date))]);
+
+      // Automatically update student status to excused if in current session
+      setStudentStatus(studentId, 'excused', 'تم إرفاق عذر طبي مصور');
+
+      if (soundEnabled) soundFx.playSuccess();
+    } catch (e) {
+      console.error('Error uploading excuse:', e);
+    }
+  };
+
+  const getStudentExcuse = (studentId: string, date: string = currentDate): MedicalExcuse | undefined => {
+    return medicalExcuses.find(e => e.studentId === studentId && (e.date === date || !e.date));
+  };
+
+  const deleteMedicalExcuse = async (id: string) => {
+    try {
+      await apiFetch(`/api/excuses/${id}`, { method: 'DELETE' });
+      setMedicalExcuses(prev => prev.filter(e => e.id !== id));
+      if (soundEnabled) soundFx.playTap();
+    } catch (e) {
+      console.error('Error deleting excuse:', e);
+    }
+  };
+
+  // Teacher Slot Resolver
   const resolveTeacherSlot = (
     user: UserAccount,
     customTimetable = timetable,
@@ -516,7 +513,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     );
 
     if (teacherSlotsToday.length > 0) {
-      // 1. Check if there is an active slot in session right now by bell schedule
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
       for (const slot of teacherSlotsToday) {
@@ -532,7 +528,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         }
       }
 
-      // 2. Find the first unsubmitted slot for today!
       const unsubmittedSlot = teacherSlotsToday.find(
         slot => !customSubmitted[`${slot.classId}_${currentDate}_p${slot.periodNumber}`]
       );
@@ -540,11 +535,9 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         return { classId: unsubmittedSlot.classId, periodNumber: unsubmittedSlot.periodNumber };
       }
 
-      // 3. Fallback to the first slot today
       return { classId: teacherSlotsToday[0].classId, periodNumber: teacherSlotsToday[0].periodNumber };
     }
 
-    // If teacher has assignedClasses, default to first assigned class
     if (user.assignedClasses && user.assignedClasses.length > 0) {
       const validClass = customClasses.find(c => user.assignedClasses!.includes(c.id));
       if (validClass) {
@@ -585,7 +578,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  // Automatically align teacher's class and period whenever currentUser changes
   useEffect(() => {
     if (currentUser?.role === 'teacher') {
       const slot = resolveTeacherSlot(currentUser);
@@ -625,39 +617,71 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         [currentSessionKey]: updated,
       };
     });
+
+    // Send single record API call
+    apiFetch('/api/attendance/record', {
+      method: 'POST',
+      body: JSON.stringify({
+        classId: selectedClassId,
+        date: currentDate,
+        period: selectedPeriod,
+        studentId,
+        status,
+        note,
+      }),
+    }).catch(err => console.error('Error saving attendance record to API:', err));
   };
 
-  // Mark all students present with one tap
   const markAllPresent = () => {
     if (settings.emergencyLockdown) return;
     if (soundEnabled) soundFx.playSuccess();
 
     setAttendanceChangeCount(prev => prev + 1);
 
-    setAttendanceMap(prev => {
-      const updated: Record<string, AttendanceEntry> = {};
-      activeStudents.forEach(st => {
-        updated[st.id] = {
-          studentId: st.id,
-          status: 'present',
-          updatedAt: new Date().toISOString(),
-        };
-      });
-      return {
-        ...prev,
-        [currentSessionKey]: updated,
+    const updated: Record<string, AttendanceEntry> = {};
+    activeStudents.forEach(st => {
+      updated[st.id] = {
+        studentId: st.id,
+        status: 'present',
+        updatedAt: new Date().toISOString(),
       };
     });
+
+    setAttendanceMap(prev => ({
+      ...prev,
+      [currentSessionKey]: updated,
+    }));
+
+    // Submit batch record
+    apiFetch('/api/attendance/submit', {
+      method: 'POST',
+      body: JSON.stringify({
+        classId: selectedClassId,
+        date: currentDate,
+        period: selectedPeriod,
+        submittedBy: currentUser?.id,
+        submittedTeacherName: currentUser?.name || 'المعلم',
+        records: updated,
+      }),
+    }).catch(err => console.error('Error batch updating present status:', err));
   };
 
-  // Reset session
-  const resetAttendanceSession = () => {
+  const resetAttendanceSession = async () => {
     if (settings.emergencyLockdown) return;
     if (soundEnabled) soundFx.playTap(350);
 
     setAttendanceChangeCount(prev => prev + 1);
 
-    setAttendanceMap(prev => {
+    try {
+      await apiFetch('/api/attendance/reset', {
+        method: 'POST',
+        body: JSON.stringify({
+          classId: selectedClassId,
+          date: currentDate,
+          period: selectedPeriod,
+        }),
+      });
+
       const updated: Record<string, AttendanceEntry> = {};
       activeStudents.forEach(st => {
         updated[st.id] = {
@@ -666,30 +690,45 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
           updatedAt: new Date().toISOString(),
         };
       });
-      return {
+
+      setAttendanceMap(prev => ({
         ...prev,
         [currentSessionKey]: updated,
-      };
-    });
+      }));
 
-    setSubmittedSessions(prev => {
-      const copy = { ...prev };
-      delete copy[currentSessionKey];
-      return copy;
-    });
+      setSubmittedSessions(prev => {
+        const copy = { ...prev };
+        delete copy[currentSessionKey];
+        return copy;
+      });
+    } catch (e) {
+      console.error('Error resetting attendance session:', e);
+    }
   };
 
-  const reopenAttendanceSession = () => {
+  const reopenAttendanceSession = async () => {
     setAttendanceChangeCount(prev => prev + 1);
-    setSubmittedSessions(prev => {
-      const copy = { ...prev };
-      delete copy[currentSessionKey];
-      return copy;
-    });
+    try {
+      await apiFetch('/api/attendance/reopen', {
+        method: 'POST',
+        body: JSON.stringify({
+          classId: selectedClassId,
+          date: currentDate,
+          period: selectedPeriod,
+        }),
+      });
+
+      setSubmittedSessions(prev => {
+        const copy = { ...prev };
+        delete copy[currentSessionKey];
+        return copy;
+      });
+    } catch (e) {
+      console.error('Error reopening attendance session:', e);
+    }
   };
 
-  // Submit current attendance session
-  const submitAttendanceSession = () => {
+  const submitAttendanceSession = async () => {
     let present = 0;
     let absent = 0;
     let late = 0;
@@ -724,11 +763,26 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       [currentSessionKey]: meta,
     }));
 
-    // Explicitly freeze and persist the records for this session in attendanceMap
     setAttendanceMap(prev => ({
       ...prev,
       [currentSessionKey]: currentRecords,
     }));
+
+    try {
+      await apiFetch('/api/attendance/submit', {
+        method: 'POST',
+        body: JSON.stringify({
+          classId: selectedClassId,
+          date: currentDate,
+          period: selectedPeriod,
+          submittedBy: currentUser?.id,
+          submittedTeacherName: currentUser?.name || 'معلم الحصة',
+          records: currentRecords,
+        }),
+      });
+    } catch (e) {
+      console.error('Error submitting attendance session:', e);
+    }
 
     if (soundEnabled) soundFx.playSuccess();
 
@@ -736,77 +790,104 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   // Staff role modification
-  const updateStaffRole = (staffId: string, role: StaffRole) => {
+  const updateStaffRole = async (staffId: string, role: StaffRole) => {
     if (soundEnabled) soundFx.playTap();
-    setStaff(prev =>
-      prev.map(member => (member.id === staffId ? { ...member, role } : member))
-    );
+    try {
+      const updated = await apiFetch(`/api/staff/${staffId}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role }),
+      });
+      setStaff(prev => prev.map(m => (m.id === staffId ? updated : m)));
+    } catch (e) {
+      console.error('Error updating staff role:', e);
+    }
   };
 
   // System settings modification
-  const updateSetting = (key: keyof SystemSettings, val: any) => {
+  const updateSetting = async (key: keyof SystemSettings, val: any) => {
     if (soundEnabled) soundFx.playTap();
-    setSettings(prev => ({ ...prev, [key]: val }));
+    const newSettings = { ...settings, [key]: val };
+    setSettings(newSettings);
+    try {
+      await apiFetch('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ [key]: val }),
+      });
+    } catch (e) {
+      console.error('Error updating settings:', e);
+    }
   };
 
-  // Emergency lockdown toggle
-  const toggleEmergencyLockdown = (reason?: string) => {
+  const toggleEmergencyLockdown = async (reason?: string) => {
     const nextVal = !settings.emergencyLockdown;
     if (soundEnabled) {
       if (nextVal) soundFx.playAlert();
       else soundFx.playSuccess();
     }
-    setSettings(prev => ({
-      ...prev,
-      emergencyLockdown: nextVal,
-      lockdownTime: nextVal ? new Date().toLocaleTimeString('ar-SA') : undefined,
-    }));
 
-    // Add alert notification
-    addNotification(
-      nextVal ? 'إغلاق طوارئ للنظام' : 'إلغاء إغلاق الطوارئ',
-      nextVal
-        ? `تم تفعيل حظر التعديل الطارئ: ${reason || 'إجراء احترازي إداري لمنع تعديل سجلات الحضور'}`
-        : 'تم رفع حظر الطوارئ وإتاحة تسجيل الحضور لجميع المعلمين.',
-      nextVal ? 'warning' : 'info'
-    );
+    try {
+      const res = await apiFetch('/api/settings/lockdown', {
+        method: 'POST',
+        body: JSON.stringify({ emergencyLockdown: nextVal, reason }),
+      });
+
+      setSettings(prev => ({
+        ...prev,
+        emergencyLockdown: res.emergencyLockdown,
+        lockdownTime: res.lockdownTime,
+      }));
+
+      // Reload notifications list
+      const notifData = await apiFetch('/api/notifications');
+      if (Array.isArray(notifData)) setNotifications(notifData);
+    } catch (e) {
+      console.error('Error toggling emergency lockdown:', e);
+    }
   };
 
-  // Browser Push Notification Helper
-  const sendNativePushNotification = (title: string, message: string) => {
-    if (typeof window !== 'undefined' && 'Notification' in window && settings.enablePushNotifications) {
-      if (Notification.permission === 'granted') {
-        const options = {
-          body: message,
-          icon: '/icon.svg',
-          badge: '/icon.svg',
-          dir: 'rtl' as const,
-          lang: 'ar',
-        };
+  // Add custom notification
+  const addNotification = async (
+    title: string,
+    message: string,
+    type: 'reminder' | 'warning' | 'info' = 'reminder',
+    classId?: string
+  ) => {
+    if (soundEnabled) soundFx.playAlert();
+    try {
+      const created = await apiFetch('/api/notifications', {
+        method: 'POST',
+        body: JSON.stringify({ title, message, type, classId }),
+      });
+      setNotifications(prev => [created, ...prev]);
+    } catch (e) {
+      console.error('Error adding notification:', e);
+    }
+  };
 
-        try {
-          if ('serviceWorker' in navigator) {
-            Promise.race([
-              navigator.serviceWorker.ready,
-              new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 500))
-            ]).then((reg: any) => {
-              reg.showNotification(title, options).catch(() => {
-                new Notification(title, options);
-              });
-            }).catch(() => {
-              new Notification(title, options);
-            });
-          } else {
-            new Notification(title, options);
-          }
-        } catch (e) {
-          try {
-            new Notification(title, options);
-          } catch (err) {
-            console.error('Push notification failed:', err);
-          }
-        }
-      }
+  const triggerTestAlert = (classId = 'class-9th', customMessage?: string) => {
+    if (soundEnabled) soundFx.playAlert();
+    const targetClass = classes.find(c => c.id === classId) || classes[0];
+    const title = 'تنبيه ذكي: موعد الحصة القادمة';
+    const message = customMessage || `تبدأ الحصة القادمة لـ (${targetClass ? targetClass.name : 'الفصل'}) خلال 5 دقائق. يرجى رصد الحضور.`;
+
+    addNotification(title, message, 'reminder', targetClass?.id);
+  };
+
+  const dismissNotification = async (id: string) => {
+    try {
+      await apiFetch(`/api/notifications/${id}`, { method: 'DELETE' });
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (e) {
+      console.error('Error dismissing notification:', e);
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      await apiFetch('/api/notifications', { method: 'DELETE' });
+      setNotifications([]);
+    } catch (e) {
+      console.error('Error clearing notifications:', e);
     }
   };
 
@@ -814,60 +895,21 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     if (typeof window !== 'undefined' && 'Notification' in window) {
       const perm = await Notification.requestPermission();
       if (perm === 'granted') {
-        sendNativePushNotification('تفعيل التنبيهات المنبثقة', 'تم تفعيل التنبيهات المدرسية المنبثقة بنجاح.');
         return true;
       }
     }
     return false;
   };
 
-  // Add custom notification
-  const addNotification = (
-    title: string,
-    message: string,
-    type: 'reminder' | 'warning' | 'info' = 'reminder',
-    classId?: string
-  ) => {
-    if (soundEnabled) soundFx.playAlert();
-    const alertId = 'notif-' + Date.now();
-    const newNotif: AppNotification = {
-      id: alertId,
-      title,
-      message,
-      time: 'الآن',
-      type,
-      classId,
-      read: false,
-    };
-    setNotifications(prev => [newNotif, ...prev]);
-    sendNativePushNotification(title, message);
-  };
-
-  // Trigger test smart alert (5 min before class)
-  const triggerTestAlert = (classId = 'class-9th', customMessage?: string) => {
-    if (soundEnabled) soundFx.playAlert();
-    const targetClass = classes.find(c => c.id === classId) || classes[0];
-    const title = 'تنبيه ذكي: موعد الحصة القادمة';
-    const message = customMessage || `تبدأ الحصة القادمة لـ (${targetClass.name}) خلال 5 دقائق. يرجى رصد الحضور.`;
-
-    addNotification(title, message, 'reminder', targetClass.id);
-  };
-
-  const dismissNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
-
-  const clearAllNotifications = () => {
-    setNotifications([]);
-  };
-
   const setFastLoadMode = (mode: boolean) => {
     if (soundEnabled) soundFx.playTap();
     setFastLoadModeState(mode);
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'fast_load', JSON.stringify(mode));
   };
 
   const setSoundEnabled = (enabled: boolean) => {
     setSoundEnabledState(enabled);
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'sound', JSON.stringify(enabled));
   };
 
   const quickAddStudentNote = (studentId: string, note: string) => {
@@ -891,88 +933,87 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         },
       };
     });
+
+    apiFetch('/api/attendance/record', {
+      method: 'POST',
+      body: JSON.stringify({
+        classId: selectedClassId,
+        date: currentDate,
+        period: selectedPeriod,
+        studentId,
+        status: currentRecords[studentId]?.status || 'present',
+        note,
+      }),
+    }).catch(err => console.error('Error saving quick note:', err));
   };
 
   // Authentication methods
-  const login = (username: string, password: string): { success: boolean; message?: string } => {
-    const trimmedUser = (username || '').trim().toLowerCase();
-    const cleanPassword = (password || '').trim();
+  const login = async (username: string, password: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const res = await apiFetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (!trimmedUser || !cleanPassword) {
-      if (soundEnabled) soundFx.playAlert();
-      return {
-        success: false,
-        message: 'يرجى إدخال اسم المستخدم وكلمة المرور.',
-      };
-    }
+      if (res.success && res.token) {
+        localStorage.setItem(STORAGE_KEY_PREFIX + 'auth_token', res.token);
+        localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(res.user));
+        setCurrentUser(res.user);
 
-    const found = users.find(
-      u => u.username.trim().toLowerCase() === trimmedUser && u.password.trim() === cleanPassword
-    );
-    if (!found) {
-      if (soundEnabled) soundFx.playAlert();
-      return {
-        success: false,
-        message: 'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى التحقق وإعادة المحاولة.',
-      };
-    }
-    sessionStorage.setItem(STORAGE_KEY_PREFIX + 'session_active', 'true');
-    setCurrentUser(found);
+        if (res.user.role === 'teacher') {
+          const slot = resolveTeacherSlot(res.user);
+          if (slot) {
+            setSelectedClassId(slot.classId);
+            setSelectedPeriod(slot.periodNumber);
+          }
+        }
 
-    // Auto-select the teacher's designated slot (class & period) for today
-    if (found.role === 'teacher') {
-      const slot = resolveTeacherSlot(found);
-      if (slot) {
-        setSelectedClassId(slot.classId);
-        setSelectedPeriod(slot.periodNumber);
+        if (soundEnabled) soundFx.playSuccess();
+        return { success: true };
       }
+      return { success: false, message: res.message || 'فشل تسجيل الدخول.' };
+    } catch (err: any) {
+      if (soundEnabled) soundFx.playAlert();
+      return { success: false, message: err.message || 'خطأ في التواصل مع الخادم.' };
     }
-
-    if (soundEnabled) soundFx.playSuccess();
-    return { success: true };
   };
 
-  const registerUser = (userData: Omit<UserAccount, 'id'>) => {
-    // Check if username already exists
-    const cleanUsername = userData.username.trim().toLowerCase();
-    if (users.some(u => u.username.toLowerCase() === cleanUsername)) {
-      return { success: false, message: 'اسم المستخدم مسجل مسبقاً، يرجى اختيار اسم مستخدم آخر.' };
-    }
-    const id = 'user-' + Date.now();
-    const newUser: UserAccount = {
-      ...userData,
-      username: userData.username.trim(),
-      id,
-    };
-    setUsers(prev => [newUser, ...prev]);
-    sessionStorage.setItem(STORAGE_KEY_PREFIX + 'session_active', 'true');
+  const registerUser = async (userData: Omit<UserAccount, 'id'>) => {
     try {
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(newUser));
-    } catch {}
-    setCurrentUser(newUser);
+      const res = await apiFetch('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
 
-    if (newUser.role === 'teacher') {
-      const slot = resolveTeacherSlot(newUser);
-      if (slot) {
-        setSelectedClassId(slot.classId);
-        setSelectedPeriod(slot.periodNumber);
+      if (res.success && res.token) {
+        localStorage.setItem(STORAGE_KEY_PREFIX + 'auth_token', res.token);
+        localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(res.user));
+        setCurrentUser(res.user);
+        setUsers(prev => [res.user, ...prev]);
+
+        if (res.user.role === 'teacher') {
+          const slot = resolveTeacherSlot(res.user);
+          if (slot) {
+            setSelectedClassId(slot.classId);
+            setSelectedPeriod(slot.periodNumber);
+          }
+        }
+
+        if (soundEnabled) soundFx.playSuccess();
+        return { success: true };
       }
+      return { success: false, message: res.message || 'فشل إنشاء الحساب.' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'خطأ في إنشاء الحساب.' };
     }
-
-    if (soundEnabled) soundFx.playSuccess();
-    return { success: true };
   };
 
   const logout = () => {
-    sessionStorage.removeItem(STORAGE_KEY_PREFIX + 'session_active');
-    try {
-      localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user');
-    } catch {
-      // ignore
-    }
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'auth_token');
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user');
     setCurrentUser(null);
     setSelectedPeriod(1);
-    setSelectedClassId(classes[0]?.id || 'class-9th');
+    if (classes.length > 0) setSelectedClassId(classes[0].id);
     if (soundEnabled) soundFx.playTap();
   };
 
@@ -980,6 +1021,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     const target = users.find(u => u.id === userId);
     if (target) {
       setCurrentUser(target);
+      localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(target));
       if (target.role === 'teacher') {
         const slot = resolveTeacherSlot(target);
         if (slot) {
@@ -991,129 +1033,178 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   };
 
-  const addUserAccount = (newUserData: Omit<UserAccount, 'id'>) => {
-    const id = 'user-' + Date.now();
-    const newUser: UserAccount = { ...newUserData, id };
-    setUsers(prev => [newUser, ...prev]);
-    if (soundEnabled) soundFx.playSuccess();
-  };
-
-  const updateUserAccount = (id: string, updates: Partial<UserAccount>) => {
-    setUsers(prev =>
-      prev.map(u => (u.id === id ? { ...u, ...updates } : u))
-    );
-    if (currentUser?.id === id) {
-      setCurrentUser(prev => (prev ? { ...prev, ...updates } : null));
+  const addUserAccount = async (newUserData: Omit<UserAccount, 'id'>) => {
+    try {
+      const created = await apiFetch('/api/users', {
+        method: 'POST',
+        body: JSON.stringify(newUserData),
+      });
+      setUsers(prev => [created, ...prev]);
+      if (soundEnabled) soundFx.playSuccess();
+    } catch (e) {
+      console.error('Error adding user account:', e);
     }
-    if (soundEnabled) soundFx.playTap();
   };
 
-  const deleteUserAccount = (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
-    if (currentUser?.id === id) {
-      setCurrentUser(null);
-    }
-    if (soundEnabled) soundFx.playTap();
-  };
-
-  // Period Timings management
-  const updatePeriodTiming = (periodNumber: number, updates: Partial<PeriodTimingConfig>) => {
-    setPeriodTimings(prev =>
-      prev.map(pt => (pt.periodNumber === periodNumber ? { ...pt, ...updates } : pt))
-    );
-    if (soundEnabled) soundFx.playSuccess();
-  };
-
-  // Class Management
-  const addClass = (newClsData: Omit<SchoolClass, 'id'>): SchoolClass => {
-    const id = 'class-' + Date.now();
-    const newCls: SchoolClass = {
-      studentCount: 0,
-      homeroomTeacher: 'غير محدد',
-      ...newClsData,
-      id,
-    };
-    setClasses(prev => [...prev, newCls]);
-    if (soundEnabled) soundFx.playSuccess();
-    return newCls;
-  };
-
-  const updateClass = (id: string, updates: Partial<SchoolClass>) => {
-    setClasses(prev =>
-      prev.map(c => (c.id === id ? { ...c, ...updates } : c))
-    );
-    if (soundEnabled) soundFx.playTap();
-  };
-
-  const deleteClass = (id: string) => {
-    setClasses(prev => {
-      const remaining = prev.filter(c => c.id !== id);
-      if (selectedClassId === id && remaining.length > 0) {
-        setSelectedClassId(remaining[0].id);
+  const updateUserAccount = async (id: string, updates: Partial<UserAccount>) => {
+    try {
+      const updated = await apiFetch(`/api/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      setUsers(prev => prev.map(u => (u.id === id ? updated : u)));
+      if (currentUser?.id === id) {
+        setCurrentUser(updated);
+        localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(updated));
       }
-      return remaining;
-    });
-    // Remove class from users' assignedClasses list
-    setUsers(prev =>
-      prev.map(u => ({
-        ...u,
-        assignedClasses: u.assignedClasses ? u.assignedClasses.filter(c => c !== id) : undefined,
-      }))
-    );
-    if (soundEnabled) soundFx.playTap();
-  };
-
-  // Student Management
-  const addStudent = (newStudentData: Omit<Student, 'id'>) => {
-    const id = 'st-' + Date.now();
-    const newStudent: Student = { ...newStudentData, id };
-    setStudents(prev => [...prev, newStudent]);
-    // update class count
-    setClasses(prev =>
-      prev.map(c => (c.id === newStudent.classId ? { ...c, studentCount: c.studentCount + 1 } : c))
-    );
-    if (soundEnabled) soundFx.playSuccess();
-  };
-
-  const updateStudent = (id: string, updates: Partial<Student>) => {
-    setStudents(prev =>
-      prev.map(s => (s.id === id ? { ...s, ...updates } : s))
-    );
-    if (soundEnabled) soundFx.playTap();
-  };
-
-  const deleteStudent = (id: string) => {
-    const target = students.find(s => s.id === id);
-    if (target) {
-      setStudents(prev => prev.filter(s => s.id !== id));
-      setClasses(prev =>
-        prev.map(c => (c.id === target.classId ? { ...c, studentCount: Math.max(0, c.studentCount - 1) } : c))
-      );
+      if (soundEnabled) soundFx.playTap();
+    } catch (e) {
+      console.error('Error updating user account:', e);
     }
-    if (soundEnabled) soundFx.playTap();
   };
 
-  // Timetable slot management
-  const addTimetableSlot = (slotData: Omit<TimetableSlot, 'id'>) => {
-    const id = 'tt-' + Date.now();
-    const newSlot: TimetableSlot = { ...slotData, id };
-    setTimetable(prev => [...prev, newSlot]);
+  const deleteUserAccount = async (id: string) => {
+    try {
+      await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
+      setUsers(prev => prev.filter(u => u.id !== id));
+      if (currentUser?.id === id) {
+        logout();
+      }
+      if (soundEnabled) soundFx.playTap();
+    } catch (e) {
+      console.error('Error deleting user account:', e);
+    }
+  };
+
+  const updatePeriodTiming = async (periodNumber: number, updates: Partial<PeriodTimingConfig>) => {
+    try {
+      const updated = await apiFetch(`/api/periods/${periodNumber}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      setPeriodTimings(prev => prev.map(pt => (pt.periodNumber === periodNumber ? updated : pt)));
+      if (soundEnabled) soundFx.playSuccess();
+    } catch (e) {
+      console.error('Error updating period timing:', e);
+    }
+  };
+
+  const addClass = async (newClsData: Omit<SchoolClass, 'id'>): Promise<SchoolClass> => {
+    const created = await apiFetch('/api/classes', {
+      method: 'POST',
+      body: JSON.stringify(newClsData),
+    });
+    setClasses(prev => [...prev, created]);
     if (soundEnabled) soundFx.playSuccess();
+    return created;
   };
 
-  const updateTimetableSlot = (id: string, updates: Partial<TimetableSlot>) => {
-    setTimetable(prev =>
-      prev.map(s => (s.id === id ? { ...s, ...updates } : s))
-    );
-    if (soundEnabled) soundFx.playTap();
+  const updateClass = async (id: string, updates: Partial<SchoolClass>) => {
+    try {
+      const updated = await apiFetch(`/api/classes/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      setClasses(prev => prev.map(c => (c.id === id ? updated : c)));
+      if (soundEnabled) soundFx.playTap();
+    } catch (e) {
+      console.error('Error updating class:', e);
+    }
   };
 
-  const deleteTimetableSlot = (id: string) => {
-    setTimetable(prev => prev.filter(s => s.id !== id));
-    if (soundEnabled) soundFx.playTap();
+  const deleteClass = async (id: string) => {
+    try {
+      await apiFetch(`/api/classes/${id}`, { method: 'DELETE' });
+      setClasses(prev => {
+        const remaining = prev.filter(c => c.id !== id);
+        if (selectedClassId === id && remaining.length > 0) {
+          setSelectedClassId(remaining[0].id);
+        }
+        return remaining;
+      });
+      if (soundEnabled) soundFx.playTap();
+    } catch (e) {
+      console.error('Error deleting class:', e);
+    }
   };
 
-  // Teacher Schedule & Active Class Detection
+  const addStudent = async (newStudentData: Omit<Student, 'id'>) => {
+    try {
+      const created = await apiFetch('/api/students', {
+        method: 'POST',
+        body: JSON.stringify(newStudentData),
+      });
+      setStudents(prev => [...prev, created]);
+      setClasses(prev => prev.map(c => (c.id === created.classId ? { ...c, studentCount: c.studentCount + 1 } : c)));
+      if (soundEnabled) soundFx.playSuccess();
+    } catch (e) {
+      console.error('Error adding student:', e);
+    }
+  };
+
+  const updateStudent = async (id: string, updates: Partial<Student>) => {
+    try {
+      const updated = await apiFetch(`/api/students/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      setStudents(prev => prev.map(s => (s.id === id ? updated : s)));
+      if (soundEnabled) soundFx.playTap();
+    } catch (e) {
+      console.error('Error updating student:', e);
+    }
+  };
+
+  const deleteStudent = async (id: string) => {
+    try {
+      await apiFetch(`/api/students/${id}`, { method: 'DELETE' });
+      const target = students.find(s => s.id === id);
+      if (target) {
+        setStudents(prev => prev.filter(s => s.id !== id));
+        setClasses(prev => prev.map(c => (c.id === target.classId ? { ...c, studentCount: Math.max(0, c.studentCount - 1) } : c)));
+      }
+      if (soundEnabled) soundFx.playTap();
+    } catch (e) {
+      console.error('Error deleting student:', e);
+    }
+  };
+
+  const addTimetableSlot = async (slotData: Omit<TimetableSlot, 'id'>) => {
+    try {
+      const created = await apiFetch('/api/timetable', {
+        method: 'POST',
+        body: JSON.stringify(slotData),
+      });
+      setTimetable(prev => [...prev, created]);
+      if (soundEnabled) soundFx.playSuccess();
+    } catch (e) {
+      console.error('Error adding timetable slot:', e);
+    }
+  };
+
+  const updateTimetableSlot = async (id: string, updates: Partial<TimetableSlot>) => {
+    try {
+      const updated = await apiFetch(`/api/timetable/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+      setTimetable(prev => prev.map(s => (s.id === id ? updated : s)));
+      if (soundEnabled) soundFx.playTap();
+    } catch (e) {
+      console.error('Error updating timetable slot:', e);
+    }
+  };
+
+  const deleteTimetableSlot = async (id: string) => {
+    try {
+      await apiFetch(`/api/timetable/${id}`, { method: 'DELETE' });
+      setTimetable(prev => prev.filter(s => s.id !== id));
+      if (soundEnabled) soundFx.playTap();
+    } catch (e) {
+      console.error('Error deleting timetable slot:', e);
+    }
+  };
+
   const allAssignedTeacherSlots = useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === 'manager') return timetable;
@@ -1130,7 +1221,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     );
   }, [currentUser, timetable]);
 
-  // Current slot where the teacher should be right now
   const currentTeacherSlot = useMemo(() => {
     if (!currentUser || currentUser.role !== 'teacher') return null;
 
@@ -1159,7 +1249,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
 
     if (teacherSlotsToday.length === 0) return null;
 
-    // Check against current time HH:MM
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -1171,18 +1260,15 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         const startMin = startH * 60 + startM;
         const endMin = endH * 60 + endM;
 
-        // If currently in period or within 10 min window
         if (nowMinutes >= startMin - 10 && nowMinutes <= endMin + 15) {
           return slot;
         }
       }
     }
 
-    // Default to first slot of today if school not active right now
     return teacherSlotsToday[0] || null;
   }, [currentUser, timetable, periodTimings]);
 
-  // Authorization check for modifying attendance
   const canUserEditAttendance = (classId: string, periodNumber: number): { allowed: boolean; reason?: string } => {
     if (!currentUser) {
       return { allowed: false, reason: 'يرجى تسجيل الدخول لتتمكن من رصد الحضور.' };
@@ -1191,7 +1277,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       return { allowed: false, reason: '⚠️ النظام في حالة إغلاق طارئ مؤقت يمنع رصد أو تعديل السجلات.' };
     }
 
-    // Manager deadline enforcement
     if (currentUser.role !== 'manager' && settings.editingDeadlineEnabled && settings.editingDeadline) {
       const now = new Date();
       const [dH, dM] = settings.editingDeadline.split(':').map(Number);
@@ -1206,12 +1291,9 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     }
 
     if (currentUser.role === 'manager' || currentUser.permissions?.canEditAnyAttendance) {
-      // Manager or teacher with granted permission has unrestricted access across all classes & periods
       return { allowed: true };
     }
 
-    // Teacher check
-    // Determine active day in timetable
     const daysMap: Record<number, 'الأحد' | 'الإثنين' | 'الثلاثاء' | 'الأربعاء' | 'الخميس'> = {
       0: 'الأحد',
       1: 'الإثنين',
@@ -1222,7 +1304,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     const jsDay = new Date().getDay();
     const todayName = daysMap[jsDay] || 'الأحد';
 
-    // Find slot for this day, class, and period
     const slot = timetable.find(
       s => s.day === todayName && s.classId === classId && s.periodNumber === periodNumber
     );
@@ -1246,9 +1327,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       }
     }
 
-    // If slot not specifically designated with a different teacher, check assigned classes
     if (currentUser.assignedClasses && currentUser.assignedClasses.includes(classId)) {
-      // Check if there is any other teacher slot for this exact period
       const otherSlot = timetable.find(
         s => s.classId === classId && s.periodNumber === periodNumber && s.teacherId && s.teacherId !== currentUser.teacherId
       );
@@ -1274,7 +1353,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     let totalLate = 0;
     let totalExcused = 0;
 
-    // Aggregate today's records for all classes
     classes.forEach(c => {
       const key = `${c.id}_${currentDate}_p${selectedPeriod}`;
       const recs = attendanceMap[key];
@@ -1291,8 +1369,6 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     });
 
     const attendanceRate = totalStudents > 0 ? Math.round(((totalPresent + totalLate) / totalStudents) * 100) : 100;
-    
-    // Count pending classes today
     const submittedCount = Object.keys(submittedSessions).filter(k => k.includes(currentDate)).length;
     const pendingClassesCount = Math.max(0, classes.length - submittedCount);
 
