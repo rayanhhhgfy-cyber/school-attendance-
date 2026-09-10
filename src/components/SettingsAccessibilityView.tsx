@@ -48,7 +48,6 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
   const {
     currentUser,
     users,
-    switchUser,
     logout,
     updateUserAccount,
     fastLoadMode,
@@ -450,36 +449,6 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
               </div>
             </div>
 
-            {/* Switch to Another User Account (One-click) */}
-            <div className="pt-2">
-              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">
-                التبديل السريع بين حسابات الكادر المدرسي:
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {users.map(u => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => switchUser(u.id)}
-                    className={`p-2.5 rounded-xl border text-right transition cursor-pointer flex items-center justify-between ${
-                      currentUser.id === u.id
-                        ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-400 dark:border-blue-600 text-blue-950 dark:text-blue-200 font-bold shadow-2xs'
-                        : 'bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-xs font-bold">{u.name}</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                        {u.role === 'manager' ? 'مدير' : u.subject || 'معلم'}
-                      </div>
-                    </div>
-                    {currentUser.id === u.id && (
-                      <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         ) : (
           <div className="p-4 bg-amber-50 dark:bg-amber-950/50 rounded-2xl border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs">
@@ -533,7 +502,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   type="text"
                   value={profileSubject}
                   onChange={e => setProfileSubject(e.target.value)}
-                  placeholder="مثال: الرياضيات"
+                  placeholder=""
                   className="w-full h-10 px-3 bg-slate-50 dark:bg-neutral-950 font-bold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-neutral-700 text-xs focus:bg-white dark:focus:bg-neutral-900"
                 />
               </div>
@@ -546,7 +515,7 @@ export const SettingsAccessibilityView: React.FC<SettingsAccessibilityViewProps>
                   type="text"
                   value={profilePhone}
                   onChange={e => setProfilePhone(e.target.value)}
-                  placeholder="05xxxxxxxx"
+                  placeholder=""
                   className="w-full h-10 px-3 bg-slate-50 dark:bg-neutral-950 font-semibold text-slate-900 dark:text-white rounded-xl border border-slate-300 dark:border-neutral-700 text-xs focus:bg-white dark:focus:bg-neutral-900"
                 />
               </div>

@@ -34,10 +34,8 @@ import {
   ArrowRight,
   ChevronLeft,
 } from 'lucide-react';
-import { AssignedClassesSelector } from './AssignedClassesSelector';
-
 export const LoginPage: React.FC = () => {
-  const { login, registerUser, users, classes, students, theme, toggleTheme } = useAttendance();
+  const { login, classes, students, theme, toggleTheme } = useAttendance();
 
   // Modal State - default open for immediate login
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(true);
@@ -74,17 +72,6 @@ export const LoginPage: React.FC = () => {
       }
     }, 200);
   };
-
-  const handleQuickLogin = (u: string, p: string) => {
-    setLoginUsername(u);
-    setLoginPassword(p);
-    setLoginError('');
-    login(u, p);
-  };
-
-  // Find manager and teachers from dynamic users state
-  const managerUser = users.find(u => u.role === 'manager') || users[0];
-  const teacherUsers = users.filter(u => u.role === 'teacher');
 
   const isDark = theme === 'dark';
 
@@ -242,83 +229,6 @@ export const LoginPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Quick 1-Click Demo Accounts Strip */}
-      <section className={`py-8 border-y ${
-        isDark ? 'bg-[#0a0a0c] border-neutral-800' : 'bg-slate-100/70 border-slate-200'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                حسابات الدخول التجريبي السريع (انقر للدخول المباشر فوراً):
-              </h3>
-            </div>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
-              يمكنك تجربة دور المدير أو المعلم بضغطة واحدة
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {/* Manager Direct Entry */}
-            {managerUser && (
-              <button
-                type="button"
-                id="btn-quick-enter-manager"
-                onClick={() => handleQuickLogin(managerUser.username, managerUser.password)}
-                className={`p-3 rounded-xl border text-right transition cursor-pointer flex items-center justify-between group ${
-                  isDark
-                    ? 'bg-[#0d0d0f] hover:bg-neutral-800 border-neutral-800'
-                    : 'bg-white hover:bg-slate-50 border-slate-200 shadow-xs'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-purple-500" />
-                    <span className="font-bold text-xs text-slate-900 dark:text-white">{managerUser.name}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                      مدير
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 block">
-                    {managerUser.username} / {managerUser.password}
-                  </span>
-                </div>
-                <ArrowLeft className="w-4 h-4 text-blue-500 group-hover:translate-x-[-2px] transition-transform" />
-              </button>
-            )}
-
-            {/* Teachers Direct Entries */}
-            {teacherUsers.slice(0, 3).map(teacher => (
-              <button
-                key={teacher.id}
-                type="button"
-                id={`btn-quick-enter-${teacher.username}`}
-                onClick={() => handleQuickLogin(teacher.username, teacher.password)}
-                className={`p-3 rounded-xl border text-right transition cursor-pointer flex items-center justify-between group ${
-                  isDark
-                    ? 'bg-[#0d0d0f] hover:bg-neutral-800 border-neutral-800'
-                    : 'bg-white hover:bg-slate-50 border-slate-200 shadow-xs'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <GraduationCap className="w-4 h-4 text-blue-500" />
-                    <span className="font-bold text-xs text-slate-900 dark:text-white">{teacher.name}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                      معلم
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">
-                    مادة {teacher.subject || 'عام'} • <span className="font-mono">{teacher.username}</span>
-                  </span>
-                </div>
-                <ArrowLeft className="w-4 h-4 text-blue-500 group-hover:translate-x-[-2px] transition-transform" />
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Core Features Showcase Grid */}
       <section className="py-12 sm:py-20 px-4 sm:px-8 max-w-7xl mx-auto w-full space-y-8">
@@ -527,7 +437,7 @@ export const LoginPage: React.FC = () => {
                         type="text"
                     value={loginUsername}
                     onChange={e => setLoginUsername(e.target.value)}
-                    placeholder="مثال: rayyan أو saleh"
+                    placeholder=""
                     dir="ltr"
                     autoComplete="username"
                         required
@@ -551,7 +461,7 @@ export const LoginPage: React.FC = () => {
                     type={showLoginPassword ? 'text' : 'password'}
                     value={loginPassword}
                     onChange={e => setLoginPassword(e.target.value)}
-                    placeholder="••••••"
+                    placeholder=""
                         dir="ltr"
                     autoComplete="current-password"
                     required
@@ -589,32 +499,6 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
 
-            {/* Fast One-Click Switcher Inside Modal */}
-            <div className="pt-2 border-t border-slate-200 dark:border-neutral-800 text-right space-y-1.5">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
-                دخول سريع بنقرة واحدة:
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {managerUser && (
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin(managerUser.username, managerUser.password)}
-                    className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 font-bold text-xs hover:bg-purple-500/20 transition text-right cursor-pointer"
-                  >
-                    {managerUser.name} (مدير)
-                  </button>
-                )}
-                {teacherUsers[0] && (
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin(teacherUsers[0].username, teacherUsers[0].password)}
-                    className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold text-xs hover:bg-blue-500/20 transition text-right cursor-pointer"
-                  >
-                    {teacherUsers[0].name} (معلم)
-                  </button>
-                )}
-              </div>
-                </div>
           </div>
             </motion.div>
           </div>

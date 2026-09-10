@@ -895,9 +895,19 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Authentication methods
   const login = (username: string, password: string): { success: boolean; message?: string } => {
-    const trimmedUser = username.trim().toLowerCase();
+    const trimmedUser = (username || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    if (!trimmedUser || !cleanPassword) {
+      if (soundEnabled) soundFx.playAlert();
+      return {
+        success: false,
+        message: 'يرجى إدخال اسم المستخدم وكلمة المرور.',
+      };
+    }
+
     const found = users.find(
-      u => u.username.toLowerCase() === trimmedUser && u.password === password
+      u => u.username.trim().toLowerCase() === trimmedUser && u.password.trim() === cleanPassword
     );
     if (!found) {
       if (soundEnabled) soundFx.playAlert();
