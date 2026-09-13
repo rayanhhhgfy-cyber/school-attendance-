@@ -539,4 +539,7 @@ export function initDb() {
   }
 }
 
+// Auto-initialize DB schema and seed data on import
+initDb();
+
 export default db;
