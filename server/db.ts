@@ -134,20 +134,6 @@ export function initDb() {
       FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
     );
 
-    CREATE TABLE IF NOT EXISTS shadow_attendance_records (
-      id TEXT PRIMARY KEY,
-      session_id TEXT,
-      class_id TEXT,
-      student_id TEXT NOT NULL,
-      date TEXT NOT NULL,
-      period_number INTEGER NOT NULL,
-      status TEXT NOT NULL,
-      note TEXT,
-      updated_at TEXT,
-      updated_by TEXT,
-      UNIQUE(session_id, student_id)
-    );
-
     CREATE TABLE IF NOT EXISTS medical_excuses (
       id TEXT PRIMARY KEY,
       student_id TEXT NOT NULL,
@@ -258,6 +244,19 @@ export function initDb() {
       assigned_classes TEXT,
       status TEXT NOT NULL DEFAULT 'نشط'
     );
+
+    CREATE TABLE IF NOT EXISTS sms_logs (
+      id TEXT PRIMARY KEY,
+      student_id TEXT,
+      parent_phone TEXT,
+      message TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'sms',
+      provider TEXT NOT NULL DEFAULT 'none',
+      provider_status TEXT NOT NULL DEFAULT 'logged',
+      provider_response TEXT,
+      created_at TEXT NOT NULL,
+      created_by TEXT
+    );
   `);
 
   // Ensure missing columns exist if DB was pre-created
@@ -347,22 +346,6 @@ export function initDb() {
       JSON.stringify(u.permissions || {})
     );
   }
-
-  // Ensure System Owner account 2323 exists
-  const pwd2323 = bcrypt.hashSync('awsandrayyangoingpicnic', 10);
-  insertUser.run(
-    'user-owner-2323',
-    '2323',
-    pwd2323,
-    pwd2323,
-    'النظام الإداري',
-    'manager',
-    null,
-    'الإدارة العامة',
-    '0500002323',
-    JSON.stringify(['class-9th', 'class-10th', 'class-11th', 'class-12th']),
-    JSON.stringify({ canManageSchoolSettings: true, canToggleEmergencyLockdown: true })
-  );
 
   // Seed Classes if empty
   const classCount = (db.prepare('SELECT COUNT(*) as count FROM classes').get() as any).count;

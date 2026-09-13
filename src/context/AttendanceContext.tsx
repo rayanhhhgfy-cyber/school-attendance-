@@ -4,6 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import bcrypt from 'bcryptjs';
 import {
   Student,
   SchoolClass,
@@ -159,7 +160,39 @@ interface AttendanceContextType {
 const AttendanceContext = createContext<AttendanceContextType | null>(null);
 
 const STORAGE_KEY_PREFIX = 'school_att_';
+const OFFLINE_CREDS_KEY = STORAGE_KEY_PREFIX + 'offline_creds';
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '';
+
+// Offline login support: after every successful ONLINE login we cache a bcrypt
+// hash of the password (never the plaintext) alongside the user's profile, keyed
+// by username. If the device later has no connectivity to the backend, the login
+// form can still authenticate that same user locally by comparing against the
+// cached hash — real bcrypt verification, no hardcoded/universal passwords.
+function readOfflineCreds(): Record<string, { hash: string; user: UserAccount }> {
+  try {
+    const raw = localStorage.getItem(OFFLINE_CREDS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function cacheOfflineCredential(username: string, password: string, user: UserAccount) {
+  try {
+    const store = readOfflineCreds();
+    store[username.trim().toLowerCase()] = { hash: bcrypt.hashSync(password, 10), user };
+    localStorage.setItem(OFFLINE_CREDS_KEY, JSON.stringify(store));
+  } catch {}
+}
+
+function tryOfflineLogin(username: string, password: string): UserAccount | null {
+  const store = readOfflineCreds();
+  const entry = store[username.trim().toLowerCase()];
+  if (entry && bcrypt.compareSync(password, entry.hash)) {
+    return entry.user;
+  }
+  return null;
+}
 
 async function apiFetch(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth_token');
@@ -190,18 +223,28 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
           const localRes = await fetch(cleanEndpoint, { ...options, headers, credentials: 'include' });
           const localData = await localRes.json().catch(() => ({}));
           if (localRes.ok) return localData;
-        } catch (e) {}
+          const localErr: any = new Error(localData.message || localData.error || 'فشلت المزامنة مع خادم البيانات.');
+          localErr.status = localRes.status;
+          throw localErr;
+        } catch (e: any) {
+          if (e && e.status) throw e;
+        }
       }
-      throw new Error(data.message || data.error || 'فشلت المزامنة مع خادم البيانات.');
+      const err: any = new Error(data.message || data.error || 'فشلت المزامنة مع خادم البيانات.');
+      err.status = response.status;
+      throw err;
     }
     return data;
   } catch (err: any) {
     // If primary fetch threw network error and cloud base URL was specified, try local fallback
-    if (primaryBase) {
+    if (primaryBase && err?.status === undefined) {
       try {
         const localRes = await fetch(cleanEndpoint, { ...options, headers, credentials: 'include' });
         const localData = await localRes.json().catch(() => ({}));
         if (localRes.ok) return localData;
+        const localErr: any = new Error(localData.message || localData.error || 'فشلت المزامنة مع خادم البيانات.');
+        localErr.status = localRes.status;
+        throw localErr;
       } catch (e) {}
     }
     throw err;
@@ -319,7 +362,11 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
 
       if (Array.isArray(excRes)) setMedicalExcuses(excRes);
 
-      // Verify currently logged in user profile if token exists
+      // Verify currently logged in user profile if token exists.
+      // Only clear the saved session on an explicit 401 (invalid/expired token) —
+      // a network failure (offline / backend unreachable) must NOT log the user out,
+      // otherwise a valid saved session gets wiped every time the app opens without
+      // connectivity, even though the cookie/localStorage login is still good.
       const token = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth_token');
       if (token) {
         try {
@@ -328,11 +375,16 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
             setCurrentUser(meData.user);
             localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(meData.user));
           }
-        } catch {
-          // Token invalid or expired
-          localStorage.removeItem(STORAGE_KEY_PREFIX + 'auth_token');
-          localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user');
-          setCurrentUser(null);
+        } catch (err: any) {
+          if (err?.status === 401 || err?.status === 403) {
+            // Token genuinely invalid/expired server-side — safe to clear.
+            localStorage.removeItem(STORAGE_KEY_PREFIX + 'auth_token');
+            localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user');
+            setCurrentUser(null);
+          }
+          // Otherwise (network error, server down, offline): keep the session that
+          // was already restored from localStorage at initial state — the app
+          // continues working in local/offline mode.
         }
       }
 
@@ -1011,6 +1063,9 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         try {
           document.cookie = `auth_token=${res.token}; path=/; max-age=2592000; SameSite=Lax`;
         } catch {}
+        // Cache a bcrypt hash (never plaintext) so this same user can still log in
+        // locally the next time the device has no connectivity to the backend.
+        cacheOfflineCredential(username, password, res.user);
 
         setCurrentUser(res.user);
 
@@ -1027,23 +1082,32 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       }
       return { success: false, message: res.message || 'فشل تسجيل الدخول.' };
     } catch (err: any) {
-      const cleanU = username.trim().toLowerCase();
-      const localMatch = users.find(u => u.username.toLowerCase() === cleanU) || INITIAL_USERS.find(u => u.username.toLowerCase() === cleanU);
-      if (localMatch && (password === localMatch.password || (cleanU === '2323' && password === 'awsandrayyangoingpicnic') || (cleanU === 'rayyan' && password === '2323') || password === '123')) {
-        const token = 'local_jwt_token_' + Date.now();
+      // A real 401/400 from a reachable server means the credentials themselves
+      // are wrong — do not fall back to the offline cache in that case.
+      if (err?.status && err.status !== undefined && err.status < 500 && err.status !== 0) {
+        if (soundEnabled) soundFx.playAlert();
+        return { success: false, message: err.message || 'اسم المستخدم أو كلمة المرور غير صحيحة.' };
+      }
+
+      // Otherwise this looks like a network/connectivity failure (backend or
+      // cloud unreachable) — fall back to the securely cached local credential
+      // for this exact user, verified with a real bcrypt compare.
+      const offlineUser = tryOfflineLogin(username, password);
+      if (offlineUser) {
+        const token = 'local_offline_token_' + Date.now();
         localStorage.setItem(STORAGE_KEY_PREFIX + 'auth_token', token);
-        localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(localMatch));
+        localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(offlineUser));
         try {
           document.cookie = `auth_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
         } catch {}
 
-        setCurrentUser(localMatch);
+        setCurrentUser(offlineUser);
         if (soundEnabled) soundFx.playSuccess();
         return { success: true };
       }
 
       if (soundEnabled) soundFx.playAlert();
-      return { success: false, message: 'اسم المستخدم أو كلمة المرور غير صحيحة.' };
+      return { success: false, message: 'تعذر الاتصال بالخادم، ولا يوجد تسجيل دخول محفوظ محلياً لهذا الحساب.' };
     }
   };
 
@@ -1063,6 +1127,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
 
         setCurrentUser(res.user);
         setUsers(prev => [res.user, ...prev]);
+        cacheOfflineCredential(userData.username, userData.password, res.user);
 
         if (res.user.role === 'teacher') {
           const slot = resolveTeacherSlot(res.user);
