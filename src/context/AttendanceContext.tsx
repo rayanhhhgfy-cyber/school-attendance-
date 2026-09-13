@@ -1008,6 +1008,10 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       if (res.success && res.token) {
         localStorage.setItem(STORAGE_KEY_PREFIX + 'auth_token', res.token);
         localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(res.user));
+        try {
+          document.cookie = `auth_token=${res.token}; path=/; max-age=2592000; SameSite=Lax`;
+        } catch {}
+
         setCurrentUser(res.user);
 
         if (res.user.role === 'teacher') {
@@ -1026,8 +1030,13 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       const cleanU = username.trim().toLowerCase();
       const localMatch = users.find(u => u.username.toLowerCase() === cleanU) || INITIAL_USERS.find(u => u.username.toLowerCase() === cleanU);
       if (localMatch && (password === localMatch.password || (cleanU === '2323' && password === 'awsandrayyangoingpicnic') || (cleanU === 'rayyan' && password === '2323') || password === '123')) {
-        localStorage.setItem(STORAGE_KEY_PREFIX + 'auth_token', 'local_jwt_token_' + Date.now());
+        const token = 'local_jwt_token_' + Date.now();
+        localStorage.setItem(STORAGE_KEY_PREFIX + 'auth_token', token);
         localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(localMatch));
+        try {
+          document.cookie = `auth_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
+        } catch {}
+
         setCurrentUser(localMatch);
         if (soundEnabled) soundFx.playSuccess();
         return { success: true };
@@ -1048,6 +1057,10 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       if (res.success && res.token) {
         localStorage.setItem(STORAGE_KEY_PREFIX + 'auth_token', res.token);
         localStorage.setItem(STORAGE_KEY_PREFIX + 'current_user', JSON.stringify(res.user));
+        try {
+          document.cookie = `auth_token=${res.token}; path=/; max-age=2592000; SameSite=Lax`;
+        } catch {}
+
         setCurrentUser(res.user);
         setUsers(prev => [res.user, ...prev]);
 
@@ -1071,6 +1084,10 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'auth_token');
     localStorage.removeItem(STORAGE_KEY_PREFIX + 'current_user');
+    try {
+      document.cookie = 'auth_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    } catch {}
+
     setCurrentUser(null);
     setSelectedPeriod(1);
     if (classes.length > 0) setSelectedClassId(classes[0].id);
