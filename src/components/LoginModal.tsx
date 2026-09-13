@@ -37,7 +37,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -47,15 +47,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      const res = login(username, password);
-      setIsLoading(false);
-      if (res.success) {
-        if (onClose) onClose();
-      } else {
-        setErrorMessage(res.message || 'بيانات الدخول غير صحيحة.');
-      }
-    }, 250);
+    const res = await login(username, password);
+    setIsLoading(false);
+    if (res.success) {
+      if (onClose) onClose();
+    } else {
+      setErrorMessage(res.message || 'بيانات الدخول غير صحيحة.');
+    }
   };
 
   return (
