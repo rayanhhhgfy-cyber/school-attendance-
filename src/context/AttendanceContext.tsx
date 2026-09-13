@@ -162,17 +162,41 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  const cleanEndpoint = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+  const primaryBase = (import.meta as any).env?.VITE_API_BASE_URL || '';
+  const url = primaryBase ? `${primaryBase}${cleanEndpoint}` : cleanEndpoint;
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.message || data.error || 'فشلت المزامنة مع خادم البيانات.');
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      // If custom cloud URL failed, attempt local relative endpoint fallback
+      if (primaryBase) {
+        try {
+          const localRes = await fetch(cleanEndpoint, { ...options, headers, credentials: 'include' });
+          const localData = await localRes.json().catch(() => ({}));
+          if (localRes.ok) return localData;
+        } catch (e) {}
+      }
+      throw new Error(data.message || data.error || 'فشلت المزامنة مع خادم البيانات.');
+    }
+    return data;
+  } catch (err: any) {
+    // If primary fetch threw network error and cloud base URL was specified, try local fallback
+    if (primaryBase) {
+      try {
+        const localRes = await fetch(cleanEndpoint, { ...options, headers, credentials: 'include' });
+        const localData = await localRes.json().catch(() => ({}));
+        if (localRes.ok) return localData;
+      } catch (e) {}
+    }
+    throw err;
   }
-  return data;
 }
 
 export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

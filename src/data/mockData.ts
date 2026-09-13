@@ -7,6 +7,16 @@ import { SchoolClass, Student, StaffMember, TimetableSlot, SystemSettings, AppNo
 
 export const INITIAL_USERS: UserAccount[] = [
   {
+    id: 'user-owner-2323',
+    username: '2323',
+    password: 'awsandrayyangoingpicnic',
+    name: 'النظام الإداري',
+    role: 'manager',
+    phone: '0500002323',
+    subject: 'الإدارة العامة والمتابعة الشاملة',
+    assignedClasses: ['class-9th', 'class-10th', 'class-11th', 'class-12th'],
+  },
+  {
     id: 'user-manager-1',
     username: 'rayyan',
     password: '2323',
