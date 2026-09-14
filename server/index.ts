@@ -1,16 +1,30 @@
 import express, { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import db, { initDb } from './db';
+import webpush from 'web-push';
+import rateLimit from 'express-rate-limit';
+import db, { initDb, getVapidKeys } from './db';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'school_attendance_secret_jwt_key_2025';
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  JWT_SECRET is not set — using an insecure default. Set a real JWT_SECRET env var before relying on this in production.');
+}
 
 initDb();
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
+
+// Basic security headers (kept dependency-free rather than pulling in helmet
+// for a handful of headers).
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-Frame-Options', 'DENY');
+  res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // CORS headers for Vite dev server or standalone frontend
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -22,6 +36,17 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     return;
   }
   next();
+});
+
+// Real brute-force protection on auth endpoints: 15 attempts per 15 minutes
+// per IP. Applied only to login/register, not the whole API, so normal use
+// of the app is never rate-limited.
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'محاولات كثيرة جداً. حاول مرة أخرى بعد بضع دقائق.' },
 });
 
 export interface AuthRequest extends Request {
@@ -75,9 +100,23 @@ app.use(authenticateToken);
 // ==========================================
 
 app.get('/api/health', (req: Request, res: Response) => {
+  let dbStatus: 'ok' | 'error' = 'ok';
+  let dbError: string | undefined;
+  let userCount: number | undefined;
+
+  try {
+    userCount = (db.prepare('SELECT COUNT(*) as count FROM users').get() as any).count;
+  } catch (e: any) {
+    dbStatus = 'error';
+    dbError = String(e?.message || e);
+  }
+
   res.json({
-    status: 'ok',
+    status: dbStatus === 'ok' ? 'ok' : 'degraded',
     mode: 'serverless-compatible',
+    isServerless: Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME),
+    db: { status: dbStatus, error: dbError, userCount },
+    pushConfigured: Boolean(getVapidKeys()),
     timestamp: new Date().toISOString(),
   });
 });
@@ -183,7 +222,7 @@ function formatTimetable(row: any) {
 // 1. AUTHENTICATION ENDPOINTS (`/api/auth`)
 // ==========================================
 
-app.post('/api/auth/login', (req: Request, res: Response) => {
+app.post('/api/auth/login', authRateLimiter, (req: Request, res: Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
     res.status(400).json({ success: false, message: 'يرجى إدخال اسم المستخدم وكلمة المرور.' });
@@ -211,7 +250,7 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
   });
 });
 
-app.post('/api/auth/register', (req: Request, res: Response) => {
+app.post('/api/auth/register', authRateLimiter, (req: Request, res: Response) => {
   const { username, password, name, role, teacherId, subject, phone, assignedClasses, permissions } = req.body;
 
   if (!username || !password || !name) {
@@ -1436,7 +1475,126 @@ app.put('/api/settings', requireManager, (req: AuthRequest, res: Response) => {
   });
 });
 
-app.post('/api/settings/lockdown', requireManager, (req: AuthRequest, res: Response) => {
+// ==========================================
+// WEB PUSH NOTIFICATIONS
+// ==========================================
+// Real push delivery via the standard Web Push protocol (no third-party SMS
+// gateway). VAPID keys live in system_settings (see server/db.ts) so the
+// same identity survives restarts/redeploys and previously-saved browser
+// subscriptions stay valid.
+
+async function broadcastPush(
+  payload: { title: string; body: string; type?: string; url?: string },
+  opts: { recipientRole?: string | null; userId?: string } = {}
+): Promise<{ sent: number; total: number; skipped?: string }> {
+  const settingsRow = db.prepare("SELECT enable_push_notifications FROM system_settings WHERE id = 'settings'").get() as any;
+  if (!settingsRow || !settingsRow.enable_push_notifications) {
+    return { sent: 0, total: 0, skipped: 'push-disabled-in-settings' };
+  }
+
+  const vapidKeys = getVapidKeys();
+  if (!vapidKeys) {
+    return { sent: 0, total: 0, skipped: 'vapid-keys-not-ready' };
+  }
+
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || 'mailto:admin@school-attendance.local',
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+  );
+
+  let subRows: any[];
+  if (opts.userId) {
+    subRows = db.prepare('SELECT * FROM push_subscriptions WHERE user_id = ?').all(opts.userId);
+  } else if (opts.recipientRole) {
+    subRows = db.prepare(`
+      SELECT ps.* FROM push_subscriptions ps
+      JOIN users u ON u.id = ps.user_id
+      WHERE u.role = ?
+    `).all(opts.recipientRole);
+  } else {
+    subRows = db.prepare('SELECT * FROM push_subscriptions').all();
+  }
+
+  const body = JSON.stringify({
+    title: payload.title,
+    body: payload.body,
+    type: payload.type || 'info',
+    url: payload.url || '/',
+  });
+
+  let sent = 0;
+  for (const row of subRows) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+        body
+      );
+      sent++;
+    } catch (err: any) {
+      if (err?.statusCode === 404 || err?.statusCode === 410) {
+        // Subscription expired or was revoked by the browser — clean it up.
+        db.prepare('DELETE FROM push_subscriptions WHERE id = ?').run(row.id);
+      } else {
+        console.error('Push send failed for subscription', row.id, err?.message || err);
+      }
+    }
+  }
+
+  return { sent, total: subRows.length };
+}
+
+app.get('/api/push/vapid-public-key', (req: Request, res: Response) => {
+  const keys = getVapidKeys();
+  if (!keys) {
+    res.status(503).json({ error: 'لم يتم تهيئة مفاتيح الإشعارات بعد، حاول مجدداً بعد قليل.' });
+    return;
+  }
+  res.json({ publicKey: keys.publicKey });
+});
+
+app.post('/api/push/subscribe', requireAuth, (req: AuthRequest, res: Response) => {
+  const { subscription } = req.body;
+  if (!subscription || !subscription.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) {
+    res.status(400).json({ error: 'بيانات الاشتراك بالإشعارات غير صالحة.' });
+    return;
+  }
+
+  const id = 'push-' + Buffer.from(subscription.endpoint).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 48);
+
+  db.prepare(`
+    INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(endpoint) DO UPDATE SET
+      user_id = excluded.user_id,
+      p256dh = excluded.p256dh,
+      auth = excluded.auth
+  `).run(id, req.user!.id, subscription.endpoint, subscription.keys.p256dh, subscription.keys.auth, new Date().toISOString());
+
+  res.json({ success: true });
+});
+
+app.post('/api/push/unsubscribe', requireAuth, (req: AuthRequest, res: Response) => {
+  const { endpoint } = req.body;
+  if (!endpoint) {
+    res.status(400).json({ error: 'endpoint الاشتراك مطلوب.' });
+    return;
+  }
+  db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?').run(endpoint, req.user!.id);
+  res.json({ success: true });
+});
+
+// Wraps an async route handler so a rejected promise (e.g. a DB error) is
+// forwarded to Express's error-handling middleware instead of hanging the
+// request or crashing the process — Express 4 does not catch async errors
+// automatically.
+function asyncHandler(fn: (req: AuthRequest, res: Response, next: NextFunction) => Promise<any>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req as AuthRequest, res, next)).catch(next);
+  };
+}
+
+app.post('/api/settings/lockdown', requireManager, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { emergencyLockdown, reason } = req.body;
   const lockdownTime = emergencyLockdown ? new Date().toLocaleTimeString('ar-SA') : null;
 
@@ -1460,11 +1618,16 @@ app.post('/api/settings/lockdown', requireManager, (req: AuthRequest, res: Respo
     VALUES (?, ?, ?, ?, ?, 'الآن', 0, 0, null, null)
   `).run(notifId, title, message, type, now);
 
+  // Real push delivery to every subscribed device — this is the one alert
+  // that genuinely needs to reach people immediately.
+  const pushResult = await broadcastPush({ title, body: message, type });
+
   res.json({
     emergencyLockdown,
     lockdownTime,
+    pushNotified: pushResult.sent,
   });
-});
+}));
 
 // ==========================================
 // 9. NOTIFICATIONS & SMS ENDPOINTS
@@ -1486,7 +1649,7 @@ app.get('/api/notifications', (req: Request, res: Response) => {
   })));
 });
 
-app.post('/api/notifications', requireAuth, (req: AuthRequest, res: Response) => {
+app.post('/api/notifications', requireAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { title, message, type, classId, recipientRole } = req.body;
   if (!title || !message) {
     res.status(400).json({ error: 'عنوان ورسالة التنبيه مطلوبة.' });
@@ -1501,6 +1664,11 @@ app.post('/api/notifications', requireAuth, (req: AuthRequest, res: Response) =>
     VALUES (?, ?, ?, ?, ?, 'الآن', 0, 0, ?, ?)
   `).run(id, title, message, type || 'info', now, recipientRole || null, classId || null);
 
+  const pushResult = await broadcastPush(
+    { title, body: message, type: type || 'info' },
+    { recipientRole: recipientRole || null }
+  );
+
   const newRow = db.prepare('SELECT * FROM notifications WHERE id = ?').get(id) as any;
   res.json({
     id: newRow.id,
@@ -1513,8 +1681,9 @@ app.post('/api/notifications', requireAuth, (req: AuthRequest, res: Response) =>
     isRead: false,
     read: false,
     recipientRole: newRow.recipient_role || undefined,
+    pushNotified: pushResult.sent,
   });
-});
+}));
 
 app.delete('/api/notifications/:id', requireAuth, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
@@ -1525,82 +1694,6 @@ app.delete('/api/notifications/:id', requireAuth, (req: AuthRequest, res: Respon
 app.delete('/api/notifications', requireAuth, (req: AuthRequest, res: Response) => {
   db.prepare('DELETE FROM notifications').run();
   res.json({ success: true });
-});
-
-app.post('/api/notifications/sms', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { studentId, message, parentPhone, type } = req.body;
-
-  if (!message || !parentPhone) {
-    res.status(400).json({ error: 'رقم ولي الأمر ونص الرسالة مطلوبان.' });
-    return;
-  }
-
-  const id = 'sms-' + Date.now();
-  const now = new Date().toISOString();
-
-  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-  const twilioToken = process.env.TWILIO_AUTH_TOKEN;
-  const twilioFrom = process.env.TWILIO_FROM_NUMBER;
-
-  let provider = 'none';
-  let providerStatus = 'logged';
-  let providerResponse: string | null = null;
-  let dispatched = false;
-
-  // If real SMS provider credentials are configured via environment variables,
-  // actually place the call. Otherwise, be honest: the message is recorded in
-  // the database (visible in the notification/SMS log) but NOT claimed as
-  // delivered, since there is no telecom provider wired up.
-  if (twilioSid && twilioToken && twilioFrom) {
-    provider = 'twilio';
-    try {
-      const twilioRes = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64'),
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            From: twilioFrom,
-            To: parentPhone,
-            Body: message,
-          }).toString(),
-        }
-      );
-      const twilioData = await twilioRes.json().catch(() => ({}));
-      providerResponse = JSON.stringify(twilioData);
-      if (twilioRes.ok) {
-        providerStatus = twilioData.status || 'sent';
-        dispatched = true;
-      } else {
-        providerStatus = 'failed';
-      }
-    } catch (e: any) {
-      providerStatus = 'failed';
-      providerResponse = String(e?.message || e);
-    }
-  }
-
-  db.prepare(`
-    INSERT INTO sms_logs (id, student_id, parent_phone, message, type, provider, provider_status, provider_response, created_at, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, studentId || null, parentPhone, message, type || 'sms', provider, providerStatus, providerResponse, now, req.user?.id || null);
-
-  res.json({
-    success: true,
-    id,
-    dispatched,
-    provider,
-    providerStatus,
-    message: dispatched
-      ? `تم إرسال الرسالة فعلياً إلى ${parentPhone} عبر ${provider}.`
-      : `تم تسجيل الرسالة في سجل النظام لِـ ${parentPhone}. لم يتم ربط مزود رسائل SMS حقيقي بعد (أضف TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER في متغيرات البيئة لتفعيل الإرسال الفعلي).`,
-    studentId,
-    type: type || 'sms',
-    timestamp: now,
-  });
 });
 
 // Serve Vite production build static assets if dist folder exists
@@ -1624,6 +1717,25 @@ app.get('*', (req: Request, res: Response) => {
 });
 
 const PORT = process.env.PORT || 3001;
+
+// Global error handler — MUST be registered last. Any error that reaches
+// here (thrown synchronously in a route, or forwarded via asyncHandler)
+// gets a clean JSON response instead of Express's default HTML error page.
+// Without this, an unexpected server-side error looks like a generic
+// "sync failed" network error on the frontend with zero diagnostic info,
+// because response.json() fails to parse the HTML and the real message is
+// lost.
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error(`[API ERROR] ${req.method} ${req.path}:`, err);
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+  res.status(err?.status && err.status >= 400 && err.status < 600 ? err.status : 500).json({
+    error: 'حدث خطأ غير متوقع في الخادم.',
+    detail: process.env.NODE_ENV === 'production' ? undefined : String(err?.message || err),
+  });
+});
 
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, () => {

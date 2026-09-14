@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
+import webpush from 'web-push';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -32,8 +33,19 @@ if (isServerless) {
   dbPath = tmpPath;
 }
 
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
+let db: Database.Database;
+try {
+  db = new Database(dbPath);
+  db.pragma('journal_mode = WAL');
+} catch (e: any) {
+  // Make the real cause visible in server/Vercel logs instead of a bare
+  // native-module stack trace — this is almost always either (a) the
+  // better-sqlite3 native binding not being available for this runtime, or
+  // (b) the target path not being writable.
+  console.error('[DB INIT FAILED] Could not open SQLite database at', dbPath);
+  console.error('This usually means the better-sqlite3 native binding is missing for this runtime, or the path is not writable.', e);
+  throw e;
+}
 
 function ensureColumn(tableName: string, colName: string, colDef: string) {
   const tableInfo = db.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
@@ -245,17 +257,14 @@ export function initDb() {
       status TEXT NOT NULL DEFAULT 'نشط'
     );
 
-    CREATE TABLE IF NOT EXISTS sms_logs (
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
       id TEXT PRIMARY KEY,
-      student_id TEXT,
-      parent_phone TEXT,
-      message TEXT NOT NULL,
-      type TEXT NOT NULL DEFAULT 'sms',
-      provider TEXT NOT NULL DEFAULT 'none',
-      provider_status TEXT NOT NULL DEFAULT 'logged',
-      provider_response TEXT,
+      user_id TEXT NOT NULL,
+      endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
       created_at TEXT NOT NULL,
-      created_by TEXT
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
 
@@ -319,6 +328,27 @@ export function initDb() {
   ensureColumn('notifications', 'created_at', 'TEXT');
   ensureColumn('notifications', 'is_read', 'INTEGER DEFAULT 0');
   ensureColumn('notifications', 'recipient_role', 'TEXT');
+
+  ensureColumn('system_settings', 'vapid_public_key', 'TEXT');
+  ensureColumn('system_settings', 'vapid_private_key', 'TEXT');
+
+  // Indexes for the columns actually used in WHERE/JOIN clauses across the
+  // API — attendance and student lookups are the hottest paths.
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_students_class_id ON students(class_id);
+    CREATE INDEX IF NOT EXISTS idx_attendance_records_session ON attendance_records(session_id);
+    CREATE INDEX IF NOT EXISTS idx_attendance_records_lookup ON attendance_records(class_id, date, period_number);
+    CREATE INDEX IF NOT EXISTS idx_attendance_sessions_lookup ON attendance_sessions(class_id, date, period_number);
+    CREATE INDEX IF NOT EXISTS idx_medical_excuses_student ON medical_excuses(student_id);
+    CREATE INDEX IF NOT EXISTS idx_timetable_class ON timetable(class_id);
+    CREATE INDEX IF NOT EXISTS idx_timetable_teacher ON timetable(teacher_id);
+    CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_recipient_role ON notifications(recipient_role);
+  `);
+
+  // Drop the old sms_logs table if it exists from a previous run — the SMS
+  // feature was replaced with real Web Push notifications.
+  try { db.exec('DROP TABLE IF EXISTS sms_logs'); } catch (e) { console.error('Failed to drop sms_logs:', e); }
 
   // Ensure default users exist
   const insertUser = db.prepare(`
@@ -520,6 +550,33 @@ export function initDb() {
       );
     }
   }
+
+  // Ensure real VAPID keys exist for Web Push. Prefer explicit env vars
+  // (VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY) so the same identity survives a
+  // redeploy; otherwise generate a real key pair once and persist it in
+  // system_settings so every subsequent server start (and every serverless
+  // invocation, since the DB itself is the source of truth) reuses the same
+  // keys — subscriptions saved by browsers stay valid across restarts.
+  const settingsRow = db.prepare("SELECT vapid_public_key, vapid_private_key FROM system_settings WHERE id = 'settings'").get() as any;
+  const envPublic = process.env.VAPID_PUBLIC_KEY;
+  const envPrivate = process.env.VAPID_PRIVATE_KEY;
+
+  if (envPublic && envPrivate) {
+    if (settingsRow && (settingsRow.vapid_public_key !== envPublic || settingsRow.vapid_private_key !== envPrivate)) {
+      db.prepare("UPDATE system_settings SET vapid_public_key = ?, vapid_private_key = ? WHERE id = 'settings'").run(envPublic, envPrivate);
+    }
+  } else if (settingsRow && (!settingsRow.vapid_public_key || !settingsRow.vapid_private_key)) {
+    const generated = webpush.generateVAPIDKeys();
+    db.prepare("UPDATE system_settings SET vapid_public_key = ?, vapid_private_key = ? WHERE id = 'settings'").run(generated.publicKey, generated.privateKey);
+  }
+}
+
+// Real Web Push credentials, persisted in system_settings (see initDb above)
+// so subscriptions stay valid across restarts/redeploys.
+export function getVapidKeys(): { publicKey: string; privateKey: string } | null {
+  const row = db.prepare("SELECT vapid_public_key, vapid_private_key FROM system_settings WHERE id = 'settings'").get() as any;
+  if (!row || !row.vapid_public_key || !row.vapid_private_key) return null;
+  return { publicKey: row.vapid_public_key, privateKey: row.vapid_private_key };
 }
 
 // Auto-initialize DB schema and seed data on import

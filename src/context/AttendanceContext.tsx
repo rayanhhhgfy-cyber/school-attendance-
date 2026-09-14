@@ -194,6 +194,54 @@ function tryOfflineLogin(username: string, password: string): UserAccount | null
   return null;
 }
 
+// --- Real Web Push subscription (no SMS, no placeholders) ---
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function subscribeToPushNotifications(): Promise<boolean> {
+  try {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return false;
+    }
+    if (Notification.permission === 'denied') return false;
+
+    const permission = Notification.permission === 'granted'
+      ? 'granted'
+      : await Notification.requestPermission();
+    if (permission !== 'granted') return false;
+
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      const { publicKey } = await apiFetch('/api/push/vapid-public-key');
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+    }
+
+    await apiFetch('/api/push/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ subscription: subscription.toJSON() }),
+    });
+    return true;
+  } catch (err) {
+    // Push is a nice-to-have — never let a subscription failure (permission
+    // denied, unsupported browser, offline) break login/registration.
+    console.error('Push subscription failed:', err);
+    return false;
+  }
+}
+
 async function apiFetch(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth_token');
   const headers: Record<string, string> = {
@@ -689,6 +737,16 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       }
     }
   }, [currentUser?.id]);
+
+  // Subscribe this device to real push notifications whenever a user is
+  // logged in (fresh login or a session restored from localStorage) and the
+  // setting is enabled. Safe to call repeatedly — getSubscription() reuses
+  // an existing browser subscription instead of creating a new one.
+  useEffect(() => {
+    if (currentUser && settings.enablePushNotifications) {
+      subscribeToPushNotifications();
+    }
+  }, [currentUser?.id, settings.enablePushNotifications]);
 
   // Set student status
   const setStudentStatus = (studentId: string, status: AttendanceStatus, note?: string) => {
